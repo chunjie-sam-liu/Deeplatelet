@@ -2,7 +2,7 @@
 # Library -----------------------------------------------------------------
 
 library(magrittr)
-
+library(ggplot2)
 
 # Path --------------------------------------------------------------------
 
@@ -37,6 +37,37 @@ metadata %>%
   dplyr::mutate(platinum_sensitivity = factor(x = platinum_sensitivity, levels = c('sensitive', 'resistant'))) ->
   metadata_platinum
 
+metadata_platinum %>% 
+  dplyr::group_by(oc, platinum_sensitivity) %>% 
+  dplyr::count() %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(oc = factor(x = oc, levels = c('OC521', 'OC44', 'OC79', 'OC172'))) %>% 
+  ggplot(aes(x = oc, y = n, fill = platinum_sensitivity)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(label = n), vjust = -1, size = 6) +
+  scale_fill_brewer(palette = 'Set1', name = 'Platinum') +
+  scale_y_continuous(expand = c(0.01, 0)) +
+  scale_x_discrete(limits = c('OC521', 'OC44', 'OC79', 'OC172'), labels = c('TC', 'DC', 'VC1', 'VC2')) +
+  theme(
+    panel.background = element_rect(fill = NA, color = 'black', size = 1),
+    axis.title.x = element_blank(),
+    axis.text = element_text(size = 16),
+    axis.title.y = element_text(size = 18),
+    legend.position = 'bottom',
+    plot.title = element_text(hjust = 0.5, size = 18)
+  ) +
+  labs(
+    y = 'Number of samples',
+    title = 'Platinum sensitivity data distribution'
+  ) ->
+  metadata_platinum_plot
+ggsave(
+  filename = 'data/output/dist-platinum.pdf',
+  plot = metadata_platinum_plot,
+  device = 'pdf',
+  width = 9,
+  height = 8
+)
 
 # PFS ---------------------------------------------------------------------
 metadata %>% 
