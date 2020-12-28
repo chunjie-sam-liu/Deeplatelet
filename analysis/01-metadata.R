@@ -24,6 +24,6 @@ metadata %>%
   metadata
 
 metadata %>% 
-  dplyr::filter(!is.na(time_on_diagnosis)) %>% View()
+  dplyr::filter(!is.na(time_on_diagnosis))
 
 
