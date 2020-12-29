@@ -82,6 +82,9 @@ metadata %>%
   dplyr::mutate(palindromia = ifelse(palindromia == '1', 1, 0)) ->
   metadata_pfs
 
+readr::write_rds(x = metadata_pfs, file = 'data/rda/metadata-pfs.rds.gz', compress = 'gz')
+
+
 metadata_pfs %>% 
   dplyr::group_by(oc, palindromia) %>% 
   dplyr::count() %>% 
@@ -170,6 +173,14 @@ metadata %>%
   dplyr::mutate(status = ifelse(status == 'alive', 0, 1)) ->
   metadata_os
 
+readr::write_rds(x = metadata_os, file = 'data/rda/metadata-os.rds.gz', compress = 'gz')
+
+give.n <- function(x, .upper_limit = max(metadata_os$os)){
+  .y = max(x) * c(1.2, 1.1)
+  .label = c(glue::glue('count={length(x)}'), glue::glue('median={median(x)}'))
+  print(.label)
+  return(tibble::tibble(y = .y, label = .label)) 
+}
 
 metadata_os %>% 
   dplyr::mutate(status = factor(x = status, levels = c(1, 0))) %>% 
@@ -184,7 +195,7 @@ metadata_os %>%
     geom = 'text',
     hjust = 0.5,
     vjust = 0.9,
-    position = position_dodge(width = 0.75),
+    position = position_dodge(width = 0.5),
     size = 5
   ) +
   theme(
@@ -197,8 +208,19 @@ metadata_os %>%
     legend.key = element_rect(fill = NA)
   ) +
   labs(
-    y = 'PFS (Month)',
-    title = 'Progression free survival distribution'
-  ) 
+    y = 'OS (Month)',
+    title = 'Overall survival distribution'
+  ) ->
+  metadata_os_dist_plot
 
+ggsave(
+  filename = 'data/output/dist-os.pdf',
+  plot = metadata_os_dist_plot,
+  device = 'pdf',
+  width = 9,
+  height = 8
+)
 
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda/01-medata.rda')
