@@ -170,4 +170,7 @@ feats <- fn_select_features(.se = total351.platinum.se.norm, .train_sample = 'OC
 
 fn_parallel_stop()
 
-readr::write_rds(x = feats, path = 'data/rda/00-selected-features.rds.gz', compress = 'gz')
+readr::write_rds(x = feats, file = 'data/rda/00-selected-features.rds.gz', compress = 'gz')
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda/04-platinum-feature.rda', ascii = FALSE, compress = TRUE)
