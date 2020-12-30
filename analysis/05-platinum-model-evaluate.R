@@ -17,7 +17,7 @@ source(file = 'src/utils.R', local = TRUE)
 source(file = 'src/model-performance.R', local = TRUE)
 # Load data ---------------------------------------------------------------
 total351.platinum.se.norm <- readr::read_rds(file = 'data/rda/total351.platinum.se.norm.rds.gz')
-panel <- readr::read_rds(file = 'data/rda/00-selected-features.rds.gz')
+
 
 
 # Function ----------------------------------------------------------------
@@ -160,7 +160,7 @@ fn_performace_dataset <- function(.dataset, .models, .total_task) {
 # Prepare task ------------------------------------------------------------
 
 # panel <- feats
-
+panel <- readr::read_rds(file = 'data/rda/00-selected-features.rds.gz')
 total351.task.list <- fn_se2total_task(.se = total351.platinum.se.norm, .feats = panel$panel)
 readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.rds.gz', compress = 'gz')
 
