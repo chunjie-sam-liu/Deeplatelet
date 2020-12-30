@@ -189,8 +189,6 @@ fn_plot_auroc <- function(.pred, .subset, .dataset) {
   .pred_perf <- purrr::map(
     .x = .pred,
     .f = mlr::generateThreshVsPerfData,
-    # fpr - False positive rate (Fall-out)
-    # fpr - True positive rate (Sensitivity, Recal)
     measures = list(mlr::fpr, mlr::tpr, mlr::auc),
     gridsize = length(.subset$panel)
   )
@@ -211,7 +209,7 @@ fn_plot_auroc <- function(.pred, .subset, .dataset) {
   ggsave(
     filename = glue::glue('03-AUROC-merge-{.dataset}.pdf'),
     plot = .plot, device = 'pdf',
-    path = path_analysis_out,
+    path = 'data/output',
     width = 8, height = 5
   )
   return(.plot)
@@ -257,11 +255,11 @@ fn_save_metrics <- function(.pred_metrics, .dataset) {
   # save metrics table to tsv and excel
   readr::write_tsv(
     x = .table_metrics,
-    path = file.path(path_analysis_out, glue::glue('04-Metrics-CI95-{.dataset}.tsv'))
+    path = file.path('data/output', glue::glue('04-Metrics-CI95-{.dataset}.tsv'))
   )
   writexl::write_xlsx(
     x = .table_metrics,
-    path = file.path(path_analysis_out, glue::glue('04-Metrics-CI95-{.dataset}.xlsx'))
+    path = file.path('data/output', glue::glue('04-Metrics-CI95-{.dataset}.xlsx'))
   )
   # return
   .table_metrics
@@ -270,7 +268,7 @@ fn_metrics <- function(.pred, .dataset) {
   # get metrics ci95 with epiR fn_roc_95ci
   .pred_metrics <- purrr::map(.x = .pred, .f = fn_roc_95ci) %>%
     tibble::enframe() %>%
-    tidyr::unnest() %>%
+    tidyr::unnest(cols = value) %>%
     dplyr::mutate(name = c('Panel', 'CA125', 'Panel + CA125'))
   # write the table to disk
   .table_metrics <- fn_save_metrics(.pred_metrics = .pred_metrics, .dataset = .dataset)
