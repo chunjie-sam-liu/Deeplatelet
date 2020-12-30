@@ -12,13 +12,58 @@ fn_se2data.frame <- function(.se) {
 fn_se2task <- function(.se, .id = 'task') {
   .d <- cbind(
     t(assay(.se)),
-    data.frame(platinum = factor(x = as.character(colData(.se)[, 'platinum']), levels = c('M', 'B')))
+    data.frame(platinum = factor(x = as.character(colData(.se)[, 'platinum']), levels = c('sensitive', 'resistant')))
   )
   mlr::makeClassifTask(
     id = .id, data = .d,
-    target = 'class', positive = 'M'
+    target = 'platinum', positive = 'sensitive'
   )
 }
+
+fn_se2task_ca125 <- function(.se, .id) {
+  .d <- as.data.frame(.se@colData[, c('CA125', 'oc', 'platinum')])
+  .d$platinum <- factor(x = as.character(.d$platinum), levels = c('sensitive', 'resistant'))
+  .rownames <- rownames(.d)
+  .d %>%
+    tibble::as_tibble() %>%
+    dplyr::mutate(oc = ifelse(oc == 'OC521', 'OC521', 'others')) %>%
+    dplyr::group_by(oc) %>%
+    dplyr::mutate(CA125 = scale(log2(CA125))[, 1]) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-oc) %>%
+    as.data.frame() ->
+    .d
+  rownames(.d) <- .rownames
+  identical(rownames(.d), rownames(t(assay(.se))))
+  
+  mlr::makeClassifTask(
+    id = .id, data = .d,
+    target = 'platinum', positive = 'sensitive'
+  )
+}
+fn_se2task_panel_ca125 <- function(.se, .id) {
+  .d <- as.data.frame(.se@colData[, c('CA125', 'oc', 'platinum')])
+  # .d <- as.data.frame(.se@colData[, c('CA125', 'platinum')])
+  .d$platinum <- factor(x = as.character(.d$platinum), levels = c('sensitive', 'resistant'))
+  .rownames <- rownames(.d)
+  .d %>%
+    tibble::as_tibble() %>%
+    dplyr::mutate(oc = ifelse(oc == 'OC521', 'OC521', 'others')) %>%
+    dplyr::group_by(oc) %>%
+    dplyr::mutate(CA125 = scale(log2(CA125))[, 1]) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-oc) %>%
+    as.data.frame() ->
+    .d
+  
+  identical(.rownames, rownames(t(assay(.se))))
+  .d <- cbind(t(assay(.se)), .d)
+  mlr::makeClassifTask(
+    id = .id, data = .d,
+    target = 'platinum', positive = 'sensitive'
+  )
+}
+
 fn_sd_median <- function(.df) {
   .sd <- apply(
     X = .df[, -1],
