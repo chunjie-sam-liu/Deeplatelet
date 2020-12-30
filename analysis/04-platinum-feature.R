@@ -166,7 +166,7 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
 # start parallel
 fn_parallel_start(n_cores = 50)
 # feature selection
-feats <- fn_select_features(.se = total351.platinum.se.norm, .train_sample = 'OC521', .eval_sample = 'OC79')
+feats <- fn_select_features(.se = total351.platinum.se.norm, .train_sample = 'OC521', .eval_sample = 'OC44')
 
 fn_parallel_stop()
 
