@@ -177,7 +177,7 @@ fn_merge_auroc_plot <- function(.merge, .dataset) {
     geom_path() +
     scale_color_manual(values = c("#006400", "#B22222", "#00008B")) +
     theme_bw() +
-    labs(title = glue::glue("{.dataset}, AUROC Benign Vs. Malignant"), x = "False Positive Rate", y = "True Positive Rate") +
+    labs(title = glue::glue("{.dataset}, AUROC Platinum sensitive Vs. resistant"), x = "False Positive Rate", y = "True Positive Rate") +
     theme(
       legend.position = "none"
     ) +
