@@ -95,7 +95,7 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
   # remove the factors that were identified as potential confounding variables from the dataset
   .matrix_w_corr_vars <- foreach(i = 1:ncol(.svobj$sv), .combine = rbind, .packages = c('magrittr')) %dopar% {
     .vars %>% purrr::map_dbl(.f = function(.x) {
-      if (.x %in% c('class', 'oc', 'library')) {
+      if (.x %in% c('oc', 'library')) {
         aov(formula = .svobj$sv[, i] ~ .se@colData[, .x]) %>%
           broom::tidy() %>% dplyr::slice(1) %>% dplyr::pull(p.value)
       } else {
@@ -108,11 +108,8 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
     }) -> .vars_pval
     names(.vars_pval) <- .vars
     
-    if (.vars_pval['class'] > .th_pval) {
-      .strong_var <- names(sort(x = .vars_pval))[1]
-    } else {
-      .strong_var <- 'class'
-    }
+  .strong_var <- names(sort(x = .vars_pval))[1]
+    
     if (.vars_pval[.strong_var] < .th_var_strong) {
       .verdict <- names(.vars_pval[.strong_var])
     } else {
@@ -128,8 +125,8 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
   }) -> confounding
   names(confounding) <- .vars
   confounding$na <- unname(which(is.na(.matrix_w_corr_vars[, 'verdict'])))
-  # confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
-  confounding$confounding <- c(confounding$oc, confounding$age, confounding$lib.size, confounding$library)
+  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
+  # confounding$confounding <- c(confounding$oc, confounding$age, confounding$lib.size, confounding$library)
   
   .data_rm_be <- removeBatchEffect(assay(.se), design = .mod, covariates = .svobj$sv[, confounding$confounding])
   SummarizedExperiment(assays = .data_rm_be, colData = .se@colData[colnames(.data_rm_be), ])
