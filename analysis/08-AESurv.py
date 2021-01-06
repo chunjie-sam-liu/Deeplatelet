@@ -67,7 +67,7 @@ def transform_labels(df_train, df_val, nd=10):
     return y_train_surv, y_val_surv, labtrans
 
 
-class AESurv(nn.Module):
+class NetAESurv(nn.Module):
     def __init__(self, in_features, encoded_features, out_features):
         super().__init__()
 
@@ -154,14 +154,14 @@ def run(filepath):
     in_features = x_train.shape[1]
     encoded_features = 64
     out_features = labtrans.out_features
-    aesurv = AESurv(in_features, encoded_features, out_features)
-    print(aesurv)
+    netaesurv = NetAESurv(in_features, encoded_features, out_features)
+    print(netaesurv)
 
     # loss
     loss = LossAELogHaz(0.6)
 
     # model
-    model = LogisticHazard(net=aesurv, optimizer=tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
+    model = LogisticHazard(net=netaesurv, optimizer=tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
 
     # metrics
     metrics = dict(loss_surv=LossAELogHaz(1), loss_ae=LossAELogHaz(0))
