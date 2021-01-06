@@ -139,7 +139,7 @@ fn_se2df <- function(.se) {
     tibble::rownames_to_column(var = 'barcode')
   .meta <- .se@colData %>%
     as.data.frame() %>%
-    dplyr::select(barcode, event, duration)
+    dplyr::select(barcode, oc, event, duration)
   
   .expr %>% 
     dplyr::left_join(.meta, by = 'barcode')
