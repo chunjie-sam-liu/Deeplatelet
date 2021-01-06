@@ -61,10 +61,10 @@ class NetAESurv(nn.Module):
             nn.ReLU(),
             nn.Linear(1024, 2048),
             nn.ReLU(),
-            nn.Linear(2048, out_features),
+            nn.Linear(2048, in_features),
         )
 
-        # Survival
+        # Full connection
         self.survnet = nn.Sequential(
             nn.Linear(encoded_features, 32),
             nn.ReLU(),
@@ -164,6 +164,10 @@ def run(filepath):
     # model
     model = LogisticHazard(net=netaesurv, optimizer=tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
 
+    # dl = model.make_dataloader(train, batch_size=5, shuffle=False)
+    # batch = next(iter(dl))
+    # model.compute_metrics(batch)
+
     # metrics
     metrics = dict(loss_surv=LossAELogHaz(1), loss_ae=LossAELogHaz(0))
 
@@ -179,8 +183,8 @@ def run(filepath):
         *train, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=False, val_data=val, metrics=metrics
     )
 
-    # res = model.log.to_pandas()
-    # _ = res[["train_loss", "val_loss"]].plot()
+    res = model.log.to_pandas()
+    _ = res[["train_loss", "val_loss"]].plot()
 
 
 def main():
