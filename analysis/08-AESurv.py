@@ -169,7 +169,7 @@ def run(filepath):
     callbacks = [tt.cb.EarlyStopping()]
 
     # cycling
-    batch_size = 10
+    batch_size = 5
     epochs = 10
 
     # trainning model
