@@ -57,5 +57,8 @@
   },
   "peacock.remoteColor": "#832561",
   "peacock.color": "#832561",
-  "jupyter.jupyterServerType": "remote"
+  "jupyter.jupyterServerType": "remote",
+  "code-runner.executorMap": {
+    "python": "/home/liucj/venv/bin/python"
+  }
 }
