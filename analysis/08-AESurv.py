@@ -155,7 +155,6 @@ def run(filepath):
     encoded_features = 64
     out_features = labtrans.out_features
     netaesurv = NetAESurv(in_features, encoded_features, out_features)
-    print(netaesurv)
 
     # loss
     loss = LossAELogHaz(0.6)
@@ -171,16 +170,15 @@ def run(filepath):
 
     # cycling
     batch_size = 10
-    epochs = 1000
+    epochs = 10
 
     # trainning model
     log = model.fit(
         *train, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=False, val_data=val, metrics=metrics
     )
 
-    res = model.log.to_pandas()
-    print(res.head())
-    _ = res[["train_loss", "val_loss"]].plot()
+    # res = model.log.to_pandas()
+    # _ = res[["train_loss", "val_loss"]].plot()
 
 
 def main():
