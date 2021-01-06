@@ -132,6 +132,19 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
   SummarizedExperiment(assays = .data_rm_be, colData = .se@colData[colnames(.data_rm_be), ])
 }
 
+fn_se2df <- function(.se) {
+  .expr <- assay(.se) %>% 
+    t() %>%
+    as.data.frame() %>% 
+    tibble::rownames_to_column(var = 'barcode')
+  .meta <- .se@colData %>%
+    as.data.frame() %>%
+    dplyr::select(barcode, event, duration)
+  
+  .expr %>% 
+    dplyr::left_join(.meta, by = 'barcode')
+}
+
 # Normalize ---------------------------------------------------------------
 fn_parallel_start(n_cores = 50)
 
@@ -142,12 +155,20 @@ total416.os.se.norm.filter_sample <- fn_filter_samples_by_cor(.se = total416.os.
 total416.os.se.norm.filter_sample.rbe <- fn_remove_unwanted_variables(.se = total416.os.se.norm.filter_sample)
 readr::write_rds(x = total416.os.se.norm.filter_sample.rbe, file = 'data/rda/total416.os.se.norm.rds.gz', compress = 'gz')
 
+total416.os.se.norm.filter_sample.rbe.df <- fn_se2df(.se = total416.os.se.norm.filter_sample.rbe)
+feather::write_feather(x = total416.os.se.norm.filter_sample.rbe.df, path = 'data/rda/total416.os.se.norm.feather')
+
+
 # pfs data normalization
 total434.pfs.se.fs <- fn_filter_samples(.se = total434.pfs.se)
 total434.pfs.se.norm <- fn_filter_genes_deseq_normalize(.se = total434.pfs.se.fs)
 total434.pfs.se.norm.filter_sample <- fn_filter_samples_by_cor(.se = total434.pfs.se.norm)
 total434.pfs.se.norm.filter_sample.rbe <- fn_remove_unwanted_variables(.se = total434.pfs.se.norm.filter_sample)
 readr::write_rds(x = total434.pfs.se.norm.filter_sample.rbe, file = 'data/rda/total434.pfs.se.norm.rds.gz', compress = 'gz')
+
+total434.pfs.se.norm.filter_sample.rbe.df <- fn_se2df(.se = total434.pfs.se.norm.filter_sample.rbe)
+feather::write_feather(x = total434.pfs.se.norm.filter_sample.rbe.df, path = 'data/rda/total434.pfs.se.norm.feather')
+
 
 fn_parallel_stop()
 
