@@ -30,43 +30,6 @@ np.random.seed(1234)
 _ = torch.manual_seed(1234)
 
 
-def load_data(filepath):
-    df = feather.read_dataframe(source=filepath)
-    df_train = df.loc[df.oc == "OC521"].drop(columns=["barcode", "oc"], axis=1)
-    df_val = df.loc[df.oc == "OC44"].drop(columns=["barcode", "oc"], axis=1)
-    df_test1 = df.loc[df.oc == "OC79"].drop(columns=["barcode", "oc"], axis=1)
-    df_test2 = df.loc[df.oc == "OC172"].drop(columns=["barcode", "oc"], axis=1)
-    return df_train, df_val, df_test1, df_test2
-
-
-def get_target(df):
-    return (df["duration"].values, df["event"].values)
-
-
-def transform_features(df_train, df_val, df_test1, df_test2):
-    columns = df_train.columns
-    columns = columns[: len(columns) - 2]
-    standardize = [([col], StandardScaler()) for col in columns]
-
-    x_mapper = DataFrameMapper(standardize)
-
-    x_train = x_mapper.fit_transform(df_train).astype("float32")
-    x_val = x_mapper.transform(df_val).astype("float32")
-    x_test1 = x_mapper.transform(df_test1).astype("float32")
-    x_test2 = x_mapper.transform(df_test2).astype("float32")
-
-    return x_train, x_val, x_test1, x_test2
-
-
-def transform_labels(df_train, df_val, nd=10):
-    num_durations = nd
-    labtrans = LogisticHazard.label_transform(num_durations)
-    y_train_surv = labtrans.fit_transform(*get_target(df_train))
-    y_val_surv = labtrans.transform(*get_target(df_val))
-
-    return y_train_surv, y_val_surv, labtrans
-
-
 class NetAESurv(nn.Module):
     def __init__(self, in_features, encoded_features, out_features):
         super().__init__()
@@ -138,6 +101,43 @@ class LossAELogHaz(nn.Module):
         return self.alpha * loss_surv + (1 - self.alpha) * loss_ae
 
 
+def load_data(filepath):
+    df = feather.read_dataframe(source=filepath)
+    df_train = df.loc[df.oc == "OC521"].drop(columns=["barcode", "oc"], axis=1)
+    df_val = df.loc[df.oc == "OC44"].drop(columns=["barcode", "oc"], axis=1)
+    df_test1 = df.loc[df.oc == "OC79"].drop(columns=["barcode", "oc"], axis=1)
+    df_test2 = df.loc[df.oc == "OC172"].drop(columns=["barcode", "oc"], axis=1)
+    return df_train, df_val, df_test1, df_test2
+
+
+def get_target(df):
+    return (df["duration"].values, df["event"].values)
+
+
+def transform_features(df_train, df_val, df_test1, df_test2):
+    columns = df_train.columns
+    columns = columns[: len(columns) - 2]
+    standardize = [([col], StandardScaler()) for col in columns]
+
+    x_mapper = DataFrameMapper(standardize)
+
+    x_train = x_mapper.fit_transform(df_train).astype("float32")
+    x_val = x_mapper.transform(df_val).astype("float32")
+    x_test1 = x_mapper.transform(df_test1).astype("float32")
+    x_test2 = x_mapper.transform(df_test2).astype("float32")
+
+    return x_train, x_val, x_test1, x_test2
+
+
+def transform_labels(df_train, df_val, nd=10):
+    num_durations = nd
+    labtrans = LogisticHazard.label_transform(num_durations)
+    y_train_surv = labtrans.fit_transform(*get_target(df_train))
+    y_val_surv = labtrans.transform(*get_target(df_val))
+
+    return y_train_surv, y_val_surv, labtrans
+
+
 def run(filepath):
     # load data
     df_train, df_val, df_test1, df_test2 = load_data(filepath)
@@ -155,9 +155,11 @@ def run(filepath):
     encoded_features = 64
     out_features = labtrans.out_features
     netaesurv = NetAESurv(in_features, encoded_features, out_features)
+    print(netaesurv)
 
     # loss
     loss = LossAELogHaz(0.6)
+    print(loss)
 
     # model
     model = LogisticHazard(net=netaesurv, optimizer=tt.optim.Adam(0.01), duration_index=labtrans.cuts, loss=loss)
