@@ -59,6 +59,6 @@
   "peacock.color": "#832561",
   "jupyter.jupyterServerType": "remote",
   "code-runner.executorMap": {
-    "python": "/home/liucj/venv/bin/python"
+    "python": "venv/bin/python"
   }
 }
