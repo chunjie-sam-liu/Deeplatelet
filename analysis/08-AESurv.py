@@ -126,8 +126,7 @@ class AESurv(nn.Module):
 class LossAELogHaz(nn.Module):
     def __init__(self, alpha):
         super().__init__()
-        assert (alpha >= 0) and (alpha < 1), "Need `alpha` in [0, 1]"
-
+        assert (alpha >= 0) and (alpha <= 1), "Need `alpha` in [0, 1]."
         self.alpha = alpha
         self.loss_surv = NLLLogistiHazardLoss()
         self.loss_ae = nn.MSELoss()
