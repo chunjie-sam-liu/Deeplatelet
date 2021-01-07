@@ -12,13 +12,15 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn_pandas import DataFrameMapper
 
+# torch modules
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.modules.linear import Linear
 import torchtuples as tt
 
-from pycox.models import LogisticHazard
+# pycox modules
+from pycox.models import LogisticHazard, PMF, DeepHit, MTLR, BCESurv
 from pycox.models.loss import NLLLogistiHazardLoss
 from pycox.evaluation import EvalSurv
 
@@ -184,7 +186,7 @@ def run(filepath):
 
     # trainning model
     log = model.fit(
-        *train, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=False, val_data=val, metrics=metrics
+        *train, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=True, val_data=val, metrics=metrics
     )
 
     res = model.log.to_pandas()
