@@ -151,6 +151,9 @@ def run(filepath):
     train = tt.tuplefy(x_train, (y_train_surv, x_train))
     val = tt.tuplefy(x_val, (y_val_surv, x_val))
 
+    duration_test1, events_test1 = get_target(df_test1)
+    duration_test2, events_test2 = get_target(df_test2)
+
     # set arch
     in_features = x_train.shape[1]
     encoded_features = 64
