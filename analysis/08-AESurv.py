@@ -6,6 +6,7 @@
 
 import numpy as np
 import feather
+import matplotlib.pyplot as plt
 
 # For preprocessing
 from sklearn.preprocessing import StandardScaler
