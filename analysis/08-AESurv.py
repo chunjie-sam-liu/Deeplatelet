@@ -182,7 +182,7 @@ def run(filepath):
 
     # cycling
     batch_size = 5
-    epochs = 10
+    epochs = 3
 
     # trainning model
     log = model.fit(
