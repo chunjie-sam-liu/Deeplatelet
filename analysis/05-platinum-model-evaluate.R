@@ -165,6 +165,7 @@ total351.task.list <- fn_se2total_task(.se = total351.platinum.se.norm, .feats =
 readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.rds.gz', compress = 'gz')
 
 # Modeling ----------------------------------------------------------------
+
 # use 50 number of cores
 parallelMap::parallelStart(mode = 'multicore', cpus = 100)
 models <- list(
