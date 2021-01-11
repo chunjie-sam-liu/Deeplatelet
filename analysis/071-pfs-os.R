@@ -21,3 +21,4 @@ names(f1)
 plot(f1, xlab='Months', ylab = 'Overall survival probability')
 sd <- survdiff(formula = Surv(time = duration, event = event) ~ stage, data = total416.os.se@colData)
 1-pchisq(sd$chisq, length(sd$n) - 1)
+
