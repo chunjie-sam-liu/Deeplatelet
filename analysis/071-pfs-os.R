@@ -18,10 +18,72 @@ total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz'
 
 # Function ----------------------------------------------------------------
 fn_get_duration_event <- function(.se) {
-  .se@colData[,c('duration', 'event')]
+  .se@colData[,c('barcode', 'oc', 'duration', 'event')] %>% 
+    as.data.frame() %>% 
+    tibble::as_tibble()
 }
 
+fn_surv_plot <- function(.df, .ylab = 'Overall survival probability', .title = 'Overall survival data distribution') {
+  .matchname <- c('OC521' = 'TC', 'OC44' = 'DC', 'OC79'='VC1', 'OC172' = 'CV2')
+  .df %>%
+    dplyr::mutate(group = plyr::revalue(oc, replace = .matchname)) %>% 
+    dplyr::mutate(group = factor(x = group, levels = .matchname)) ->
+    .df.group
+  
+  .fit <- survfit(Surv(time = duration, event = event) ~ group, data = .df.group)
+  
+  survminer::ggsurvplot(
+    fit = .fit,
+    data = .df.group,
+    pval = TRUE,
+    pval.mehtod = TRUE,
+    palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+    break.time.by = 50,
+    ggtheme = theme_bw(),
+    
+    risk.table = TRUE,
+    risk.table.y.text.col = TRUE,
+    risk.table.y.text = FALSE,
+    risk.table.col = 'strata',
+    risk.table.fontsize = 6,
+    
+    ncensor.plot = TRUE,
+    surv.median.line = 'hv',
+    
+    legend = 'top',
+    legend.labs = .matchname,
+    legend.title = 'Group',
+    xlab = 'Time in months',
+    ylab = .ylab,
+    title = .title
+  )
+}
 # Analysis ----------------------------------------------------------------
 
+fn_get_duration_event(.se = total416.os.se) %>% 
+  fn_surv_plot(.ylab = 'Overall survival probability', .title = 'Overall survival data distribution') -> os.plot
 
+ggsave(
+  filename ='os-plot.pdf',
+  plot = print(os.plot, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
 
+fn_get_duration_event(.se = total434.pfs.se) %>% 
+  fn_surv_plot(.ylab = "Progression free survival probability", .title='Progression free survival data distribution') -> pfs.plot
+
+ggsave(
+  filename ='pfs-plot.pdf',
+  plot = print(pfs.plot, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
+
+# Save --------------------------------------------------------------------
+
+save.image(file = 'data/rda/071-pfs-os.rda')
