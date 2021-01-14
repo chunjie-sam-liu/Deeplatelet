@@ -36,11 +36,17 @@ fn_expr_duration_event <- function(.se) {
 }
 
 fn_cox_model <- function(.x) {
-  .coxph <- tryCatch(
+  .cox <- tryCatch(
     expr = survival::coxph(survival::Surv(time = duration, event = event) ~ expr, data = .x),
-    error = function(e) {1},
-    warning = function(w) {1}
-  ) %>% summary()
+    error = function(e) {NULL},
+    warning = function(w) {NULL}
+  ) 
+  
+  if(is.null(.cox)) {
+    return(tibble::tibble(hazard_ratio = NA, ci_lower95 = NA, ci_upper95 = NA, coxp = NA))
+  }
+  
+  .coxph <- summary(.cox)
   
   .coxph$conf.int %>% 
     as.data.frame() %>% 
@@ -64,6 +70,8 @@ total416.os.expr <- fn_expr_duration_event(.se = total416.os.se)
 total434.pfs.expr <- fn_expr_duration_event(.se = total434.pfs.se)
 
 cluster <- multidplyr::new_cluster(n = 30) 
+
+
 multidplyr::cluster_library(cluster, 'magrittr')
 multidplyr::cluster_assign(cluster, fn_cox_model = fn_cox_model, fn_coxr_each_gene = fn_coxr_each_gene)
 
@@ -75,6 +83,15 @@ total416.os.expr %>%
 
 readr::write_rds(x = total416.os.expr.coxph, file = 'data/rda/total416-os.expr.coxph.rds.gz', compress = 'gz')
 
+total416.os.expr.coxph %>% 
+  dplyr::select(-data) %>% 
+  tidyr::unnest(coxph) %>% 
+  dplyr::filter(coxp < 0.05) %>% 
+  dplyr::filter(name == 'all') ->
+  total416.os.expr.coxph.hazard_ratio
+readr::write_rds(x = total416.os.expr.coxph.hazard_ratio, file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
+
+
 total434.pfs.expr %>% 
   multidplyr::partition(cluster) %>% 
   dplyr::mutate(coxph = purrr::map(.x = data, .f = fn_coxr_each_gene)) %>% 
@@ -83,6 +100,13 @@ total434.pfs.expr %>%
 
 readr::write_rds(x = total434.pfs.expr.coxph, file = 'data/rda/total434-pfs.expr.coxph.rds.gz', compress = 'gz')
 
+total434.pfs.expr.coxph %>% 
+  dplyr::select(-data) %>% 
+  tidyr::unnest(coxph) %>% 
+  dplyr::filter(coxp < 0.05) %>% 
+  dplyr::filter(name == 'all') ->
+  total434.pfs.expr.coxph.hazard_ratio
+readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 # Save image --------------------------------------------------------------
 
