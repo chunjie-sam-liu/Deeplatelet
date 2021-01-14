@@ -1,0 +1,30 @@
+# Library -----------------------------------------------------------------
+
+library(magrittr)
+library(ggplot2)
+library(DESeq2)
+library(survival)
+
+# src ---------------------------------------------------------------------
+
+source(file='src/doparallel.R', local = TRUE)
+
+# Load data ---------------------------------------------------------------
+
+total416.os.se <- readr::read_rds(file = 'data/rda/total416.os.se.norm.rds.gz')
+total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz')
+
+total416.os.expr.coxph.hazard_ratio <- readr::read_rds(file='data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz')
+total434.pfs.expr.coxph.hazard_ratio <- readr::read_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz')
+
+# Transform to feather ----------------------------------------------------
+
+
+feather::write_feather(x = total416.os.expr.coxph.hazard_ratio, path = 'data/rda/total416.os.expr.coxph.hazard_ratio.feather')
+feather::write_feather(x = total434.pfs.expr.coxph.hazard_ratio, path = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.feather')
+
+
+
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda/073-univariate-features-deep-learning.rda')
