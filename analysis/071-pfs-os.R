@@ -38,7 +38,7 @@ fn_surv_plot <- function(.df, .ylab = 'Overall survival probability', .title = '
     pval = TRUE,
     pval.mehtod = TRUE,
     palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
-    break.time.by = 50,
+    break.time.by = 20,
     ggtheme = theme_bw(),
     
     risk.table = TRUE,
@@ -60,6 +60,9 @@ fn_surv_plot <- function(.df, .ylab = 'Overall survival probability', .title = '
 }
 # Analysis ----------------------------------------------------------------
 
+# OS ----------------------------------------------------------------------
+
+
 fn_get_duration_event(.se = total416.os.se) %>% 
   fn_surv_plot(.ylab = 'Overall survival probability', .title = 'Overall survival data distribution') -> os.plot
 
@@ -72,6 +75,28 @@ ggsave(
   height = 9
 )
 
+# set cutoff for durations as 100 months.
+
+total416.os.se.duration <- total416.os.se
+total416.os.se.duration$duration <- ifelse(total416.os.se.duration$duration > 100, 100, total416.os.se.duration$duration)
+
+fn_get_duration_event(.se = total416.os.se.duration) %>% 
+  fn_surv_plot(.ylab = 'Overall survival probability', .title = 'Overall survival data distribution') -> os.duration.plot
+
+ggsave(
+  filename ='os-duration-plot.pdf',
+  plot = print(os.duration.plot, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
+
+
+# PFS ---------------------------------------------------------------------
+
+
+
 fn_get_duration_event(.se = total434.pfs.se) %>% 
   fn_surv_plot(.ylab = "Progression free survival probability", .title='Progression free survival data distribution') -> pfs.plot
 
@@ -83,6 +108,22 @@ ggsave(
   width = 8,
   height = 9
 )
+
+total434.pfs.se.duration <- total434.pfs.se
+total434.pfs.se.duration$duration <- ifelse(total434.pfs.se.duration$duration > 60, 60, total434.pfs.se.duration$duration)
+
+fn_get_duration_event(.se = total434.pfs.se.duration) %>% 
+  fn_surv_plot(.ylab = "Progression free survival probability", .title='Progression free survival data distribution') -> pfs.duration.plot
+
+ggsave(
+  filename ='pfs-duration-plot.pdf',
+  plot = print(pfs.duration.plot, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
+
 
 # Save --------------------------------------------------------------------
 
