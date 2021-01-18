@@ -80,6 +80,10 @@ ggsave(
 total416.os.se.duration <- total416.os.se
 total416.os.se.duration$duration <- ifelse(total416.os.se.duration$duration > 100, 100, total416.os.se.duration$duration)
 
+
+readr::write_rds(x= total416.os.se.duration, file = 'data/rda/total416.os.se.duration.norm.rds.gz')
+
+
 fn_get_duration_event(.se = total416.os.se.duration) %>% 
   fn_surv_plot(.ylab = 'Overall survival probability', .title = 'Overall survival data distribution') -> os.duration.plot
 
@@ -111,6 +115,9 @@ ggsave(
 
 total434.pfs.se.duration <- total434.pfs.se
 total434.pfs.se.duration$duration <- ifelse(total434.pfs.se.duration$duration > 60, 60, total434.pfs.se.duration$duration)
+
+# write rds for durations
+readr::write_rds(x= total434.pfs.se.duration, file = 'data/rda/total434.pfs.se.duration.norm.rds.gz')
 
 fn_get_duration_event(.se = total434.pfs.se.duration) %>% 
   fn_surv_plot(.ylab = "Progression free survival probability", .title='Progression free survival data distribution') -> pfs.duration.plot
