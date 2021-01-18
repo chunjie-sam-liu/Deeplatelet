@@ -194,7 +194,7 @@ def run(filepath):
 
 
 def main():
-    run(filepath="data/rda/total416.os.se.norm.feather")
+    run(filepath="data/rda/total416.os.se.norm.coxph.feather")
 
 
 if __name__ == "__main__":
