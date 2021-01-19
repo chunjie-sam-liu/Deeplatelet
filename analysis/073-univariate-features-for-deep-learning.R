@@ -31,6 +31,7 @@ fn_se2df <- function(.se) {
   .expr %>% 
     dplyr::left_join(.meta, by = 'barcode')
 }
+
 # Transform to feather ----------------------------------------------------
 total416.os.expr.coxph.hazard_ratio.df <- total416.os.se[total416.os.expr.coxph.hazard_ratio$ensid,] %>% fn_se2df()
 total434.pfs.expr.coxph.hazard_ratio.df <- total434.pfs.se[total434.pfs.expr.coxph.hazard_ratio$ensid,] %>% fn_se2df()
