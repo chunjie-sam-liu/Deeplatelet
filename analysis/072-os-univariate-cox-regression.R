@@ -12,8 +12,11 @@ source(file='src/doparallel.R', local = TRUE)
 
 # Load data ---------------------------------------------------------------
 
-total416.os.se <- readr::read_rds(file = 'data/rda/total416.os.se.norm.rds.gz')
-total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz')
+# total416.os.se <- readr::read_rds(file = 'data/rda/total416.os.se.norm.rds.gz')
+# total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz')
+
+total416.os.se <- readr::read_rds(file = 'data/rda/total416.os.se.duration.norm.rds.gz')
+total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.duration.norm.rds.gz')
 
 # Function ----------------------------------------------------------------
 
@@ -69,12 +72,13 @@ fn_coxr_each_gene <- function(.x) {
 total416.os.expr <- fn_expr_duration_event(.se = total416.os.se)
 total434.pfs.expr <- fn_expr_duration_event(.se = total434.pfs.se)
 
-cluster <- multidplyr::new_cluster(n = 30) 
+cluster <- multidplyr::new_cluster(n = 20) 
 
 
 multidplyr::cluster_library(cluster, 'magrittr')
 multidplyr::cluster_assign(cluster, fn_cox_model = fn_cox_model, fn_coxr_each_gene = fn_coxr_each_gene)
 
+# os
 total416.os.expr %>% 
   multidplyr::partition(cluster) %>% 
   dplyr::mutate(coxph = purrr::map(.x = data, .f = fn_coxr_each_gene)) %>% 
@@ -110,4 +114,4 @@ readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/tota
 
 # Save image --------------------------------------------------------------
 
-save.image(file = 'data/rda/0072-univariate-cox-regression.rda')
+save.image(file = 'data/rda/072-univariate-cox-regression.rda')
