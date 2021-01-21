@@ -32,6 +32,17 @@ fn_coxph <- function(.data) {
   coxph(formula = .formula, data = .data )
 }
 
+fn_survivalROC_helper <- function(.x, .d) {
+  survivalROC(
+    Stime = .d$duration,
+    status = .d$event,
+    marker = .d$lp,
+    predict.time = .x,
+    method = 'NNE',
+    span = 0.25 * nrow(.d)^(-0.2)
+  )
+}
+
 # Filter data -------------------------------------------------------------
 
 train <- fn_filter_data(.oc = 'OC521')
@@ -61,9 +72,40 @@ survivalROC(
   span = 0.25 * nrow(train_new)^(-0.2)
 )
 
+train_roc <- tibble::tibble(
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
+) %>% 
+  dplyr::mutate(
+    survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = train_new),
+    auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
+    df_survivalROC = purrr::map(survivalROC, function(obj) {
+    tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
+  })
+) %>% 
+  dplyr::select(-survivalROC) %>% 
+  tidyr::unnest(df_survivalROC) %>% 
+  dplyr::arrange(t, FP, TP)
+
+train_roc %>% 
+  ggplot(mapping = aes(x = FP, y = TP)) +
+  geom_point() +
+  geom_line() +
+  geom_label(
+    data = train_roc %>% dplyr::select(t, auc) %>% unique,
+    mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
+  ) +
+  facet_wrap(~t) + 
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5),
+    legend.key = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    strip.background = element_blank()
+  )
+
 eval_new <- eval
 eval_new$lp <- predict(model, newdata = eval)
-eval_new$risk <- ifelse(eval_new$lp >-10.84, 'high', 'low')
+eval_new$risk <- ifelse(eval_new$lp > median(eval_new$lp), 'high', 'low')
 ggsurvplot(
   fit = survfit(formula = Surv(duration, event) ~ risk, data = eval_new),
   data = eval_new,
@@ -76,10 +118,41 @@ survivalROC(
   Stime = eval_new$duration,
   status = eval_new$event,
   marker = eval_new$lp,
-  predict.time = 12,
+  predict.time = 60,
   method = 'NNE',
   span = 0.25 * nrow(eval_new)^(-0.2)
 )
+
+eval_roc <- tibble::tibble(
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
+) %>% 
+  dplyr::mutate(
+    survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = eval_new),
+    auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
+    df_survivalROC = purrr::map(survivalROC, function(obj) {
+      tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
+    })
+  ) %>% 
+  dplyr::select(-survivalROC) %>% 
+  tidyr::unnest(df_survivalROC) %>% 
+  dplyr::arrange(t, FP, TP)
+
+eval_roc %>% 
+  ggplot(mapping = aes(x = FP, y = TP)) +
+  geom_point() +
+  geom_line() +
+  geom_label(
+    data = eval_roc %>% dplyr::select(t, auc) %>% unique,
+    mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
+  ) +
+  facet_wrap(~t) + 
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5),
+    legend.key = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    strip.background = element_blank()
+  )
 
 
 test1_new <- test1
@@ -97,15 +170,47 @@ survivalROC(
   Stime = test1_new$duration,
   status = test1_new$event,
   marker = test1_new$lp,
-  predict.time = 12,
+  predict.time = 60,
   method = 'NNE',
   span = 0.25 * nrow(test1_new)^(-0.2)
 )
 
+test1_roc <- tibble::tibble(
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
+) %>% 
+  dplyr::mutate(
+    survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = test1_new),
+    auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
+    df_survivalROC = purrr::map(survivalROC, function(obj) {
+      tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
+    })
+  ) %>% 
+  dplyr::select(-survivalROC) %>% 
+  tidyr::unnest(df_survivalROC) %>% 
+  dplyr::arrange(t, FP, TP)
+
+test1_roc %>% 
+  ggplot(mapping = aes(x = FP, y = TP)) +
+  geom_point() +
+  geom_line() +
+  geom_label(
+    data = test1_roc %>% dplyr::select(t, auc) %>% unique,
+    mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
+  ) +
+  facet_wrap(~t) + 
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5),
+    legend.key = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    strip.background = element_blank()
+  )
+
+
 
 test2_new <- test2
 test2_new$lp <- predict(model, newdata = test2)
-test2_new$risk <- ifelse(test2_new$lp > -10.84, 'high', 'low')
+test2_new$risk <- ifelse(test2_new$lp > median(train_new$lp), 'high', 'low')
 ggsurvplot(
   fit = survfit(formula = Surv(duration, event) ~ risk, data = test2_new),
   data = test2_new,
@@ -118,7 +223,39 @@ survivalROC(
   Stime = test2_new$duration,
   status = test2_new$event,
   marker = test2_new$lp,
-  predict.time = 30,
+  predict.time = 50,
   method = 'NNE',
   span = 0.25 * nrow(test2_new)^(-0.2)
 )
+
+test2_roc <- tibble::tibble(
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
+) %>% 
+  dplyr::mutate(
+    survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = test2_new),
+    auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
+    df_survivalROC = purrr::map(survivalROC, function(obj) {
+      tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
+    })
+  ) %>% 
+  dplyr::select(-survivalROC) %>% 
+  tidyr::unnest(df_survivalROC) %>% 
+  dplyr::arrange(t, FP, TP)
+
+test2_roc %>% 
+  ggplot(mapping = aes(x = FP, y = TP)) +
+  geom_point() +
+  geom_line() +
+  geom_label(
+    data = test2_roc %>% dplyr::select(t, auc) %>% unique,
+    mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
+  ) +
+  facet_wrap(~t) + 
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5),
+    legend.key = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    strip.background = element_blank()
+  )
+
