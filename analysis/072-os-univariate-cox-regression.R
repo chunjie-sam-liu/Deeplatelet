@@ -94,24 +94,12 @@ total416.os.expr.coxph %>%
   dplyr::select(-data) %>% 
   tidyr::unnest(coxph) %>% 
   dplyr::filter(coxp < 0.05) %>% 
-  dplyr::filter(name == 'OC521') ->
+  dplyr::filter(name == 'all') ->
   total416.os.expr.coxph.hazard_ratio
 readr::write_rds(x = total416.os.expr.coxph.hazard_ratio, file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
-as.data.frame(total416.os.se@colData) %>% 
-  dplyr::filter(duration > 0) %>% 
-  dplyr::pull(barcode) -> .sample
-.d <- total416.os.se[total416.os.expr.coxph.hazard_ratio$ensid, .sample]
-.x <- t(assay(.d))
-.y <- as.data.frame(.d@colData) %>% dplyr::select(time = duration, status = event) %>% as.matrix()
 
-fit <- glmnet::glmnet(
-  x = .x,
-  y = .y,
-  family = 'cox'
-  )
-plot(fit)
-cvfit <- cv.glmnet()
+
 # PFS ---------------------------------------------------------------------
 
 
