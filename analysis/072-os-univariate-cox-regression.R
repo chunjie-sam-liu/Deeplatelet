@@ -78,7 +78,10 @@ cluster <- multidplyr::new_cluster(n = 20)
 multidplyr::cluster_library(cluster, 'magrittr')
 multidplyr::cluster_assign(cluster, fn_cox_model = fn_cox_model, fn_coxr_each_gene = fn_coxr_each_gene)
 
-# os
+
+# OS ----------------------------------------------------------------------
+
+
 total416.os.expr %>% 
   multidplyr::partition(cluster) %>% 
   dplyr::mutate(coxph = purrr::map(.x = data, .f = fn_coxr_each_gene)) %>% 
@@ -91,9 +94,25 @@ total416.os.expr.coxph %>%
   dplyr::select(-data) %>% 
   tidyr::unnest(coxph) %>% 
   dplyr::filter(coxp < 0.05) %>% 
-  dplyr::filter(name == 'all') ->
+  dplyr::filter(name == 'OC521') ->
   total416.os.expr.coxph.hazard_ratio
 readr::write_rds(x = total416.os.expr.coxph.hazard_ratio, file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
+
+as.data.frame(total416.os.se@colData) %>% 
+  dplyr::filter(duration > 0) %>% 
+  dplyr::pull(barcode) -> .sample
+.d <- total416.os.se[total416.os.expr.coxph.hazard_ratio$ensid, .sample]
+.x <- t(assay(.d))
+.y <- as.data.frame(.d@colData) %>% dplyr::select(time = duration, status = event) %>% as.matrix()
+
+fit <- glmnet::glmnet(
+  x = .x,
+  y = .y,
+  family = 'cox'
+  )
+plot(fit)
+cvfit <- cv.glmnet()
+# PFS ---------------------------------------------------------------------
 
 
 total434.pfs.expr %>% 
@@ -108,7 +127,7 @@ total434.pfs.expr.coxph %>%
   dplyr::select(-data) %>% 
   tidyr::unnest(coxph) %>% 
   dplyr::filter(coxp < 0.05) %>% 
-  dplyr::filter(name == 'all') ->
+  dplyr::filter(name == 'OC521') ->
   total434.pfs.expr.coxph.hazard_ratio
 readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
