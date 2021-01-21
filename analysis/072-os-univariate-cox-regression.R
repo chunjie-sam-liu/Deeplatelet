@@ -67,6 +67,46 @@ fn_coxr_each_gene <- function(.x) {
   
   dplyr::bind_rows(.x_all, .x_oc521, .x_oc44, .x_oc79, .x_oc172)
 }
+
+fn_lasso <- function(.se, .hr, .type = 'os') {
+  
+  as.data.frame(.se@colData) %>% 
+    dplyr::filter(duration > 0) %>% 
+    # dplyr::filter(oc == 'OC521') %>%
+    dplyr::pull(barcode) -> .samples
+  
+  .d <- .se[.hr$ensid, .samples]
+  
+  .x <- t(assay(.d))
+  .y <- as.data.frame(.d@colData) %>% 
+    dplyr::select(time = duration, status = event) %>% 
+    as.matrix()
+  
+  
+  .fit <- glmnet::glmnet(
+    x = .x,
+    y = .y,
+    family = 'cox'
+  )
+  
+  pdf(file = glue::glue('data/output/{.type}-multicox-lasso.pdf'))
+  plot(.fit, main = glue::glue('{.type}-multicox-lasso'))
+  dev.off()
+  
+  .cvfit <- glmnet::cv.glmnet(x = .x, y = .y, family = 'cox')
+  
+  pdf(file = glue::glue('data/output/{.type}-multicox-lasso-lambda.pdf'))
+  plot(.cvfit, main=glue::glue('{.type}-multicox-lasso-lambda'))
+  dev.off()
+  
+  .coef.min <- coef(.cvfit, s = 'lambda.min')
+  
+  as.matrix(.coef.min) %>% 
+    as.data.frame() %>% 
+    tibble::rownames_to_column(var = 'ensid') %>% 
+    dplyr::rename(coef = `1`) %>% 
+    dplyr::filter(abs(coef) > 0)
+}
 # Analysis ----------------------------------------------------------------
 
 total416.os.expr <- fn_expr_duration_event(.se = total416.os.se)
@@ -82,6 +122,9 @@ multidplyr::cluster_assign(cluster, fn_cox_model = fn_cox_model, fn_coxr_each_ge
 # OS ----------------------------------------------------------------------
 
 
+# Univariate cox ----------------------------------------------------------
+
+
 total416.os.expr %>% 
   multidplyr::partition(cluster) %>% 
   dplyr::mutate(coxph = purrr::map(.x = data, .f = fn_coxr_each_gene)) %>% 
@@ -94,11 +137,18 @@ total416.os.expr.coxph %>%
   dplyr::select(-data) %>% 
   tidyr::unnest(coxph) %>% 
   dplyr::filter(coxp < 0.05) %>% 
-  dplyr::filter(name == 'all') ->
+  dplyr::filter(name == 'OC521') ->
   total416.os.expr.coxph.hazard_ratio
-readr::write_rds(x = total416.os.expr.coxph.hazard_ratio, file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 
+
+# Multicox lasso ----------------------------------------------------------
+
+total416.se.multicox <- fn_lasso(.se = total416.os.se, .hr = total416.os.expr.coxph.hazard_ratio, .type = 'OS')
+
+total416.os.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% total416.se.multicox$ensid) %>%
+  readr::write_rds(file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 # PFS ---------------------------------------------------------------------
 
@@ -118,6 +168,15 @@ total434.pfs.expr.coxph %>%
   dplyr::filter(name == 'OC521') ->
   total434.pfs.expr.coxph.hazard_ratio
 readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
+
+
+# Multicox lasso ----------------------------------------------------------
+
+total434.se.multicox <- fn_lasso(.se = total434.pfs.se, .hr =total434.pfs.expr.coxph.hazard_ratio, .type = 'pfs')
+
+total434.pfs.expr.coxph.hazard_ratio %>% 
+  # dplyr::filter(ensid %in% total434.se.multicox$ensid) %>% 
+  readr::write_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 # Save image --------------------------------------------------------------
 
