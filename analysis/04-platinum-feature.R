@@ -25,15 +25,15 @@ fn_ifs_eval <- function(.x, .feats, .train.se, .eval.se) {
   .feats <- head(.feats, .x)
   .train.feats.se <- .train.se[.feats, ]
   .eval.feats.se <- .eval.se[.feats, ]
-  
+
   # 2. build model
   .train.feats.model <- fn_caret_train_model(.se = .train.feats.se)
   .bestune <- .train.feats.model$bestTune
-  
+
   # 3. ensembl predict
   .train.auc <- fn_ensembl_predict(.model = .train.feats.model, .se = .train.feats.se, .title = 'Train')
   .eval.auc <- fn_ensembl_predict(.model = .train.feats.model, .se = .eval.feats.se, .title = 'Eval')
-  
+
   # 4. return
   tibble::tibble(
     num = .x,
@@ -69,11 +69,11 @@ fn_ifs_plot <- function(.ifs.res){
 fn_select_features <- function(.se, .train_sample, .eval_sample) {
   .train.se <- .se[, .se$oc == .train_sample]
   .eval.se <- .se[, .se$oc == .eval_sample]
-  
+
   .df <- fn_se2data.frame(.se = .train.se)
   # 1. standard variation filter
   .feats.sd.median <- fn_sd_median(.df = .df)
-  
+
   # 3. lasso expression L1-norm
   # Using lasso to select features based on big data.
   set.seed(1223)
@@ -83,7 +83,7 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
     trControl = trainControl("cv", number = 10),
     tuneGrid = expand.grid(alpha = 1, lambda = 10^seq(-3, 3, length = 100))
   )
-  
+
   .lasso.dgcmatrix <- coef(.lasso$finalModel, .lasso$bestTune$lambda)
   as.matrix(.lasso.dgcmatrix) %>%
     as.data.frame() %>%
@@ -94,27 +94,27 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
     dplyr::pull(Gene_ID) ->
     .feats.lasso
   readr::write_rds(x = .feats.lasso, file = 'data/rda/00-lasso-feature.rds.gz', compress = 'gz')
-  
+
   # 4. mrmr
-  
+
   .df.elastic.lasso <- .df[, c('platinum', .feats.lasso)]
-  
+
   .df.elastic.lasso.mrmr.dd <- mRMRe::mRMR.data(data = .df.elastic.lasso)
-  
+
   .df.elastic.lasso.mrmr.dd.dd.filter <- mRMRe::mRMR.ensemble(
     data = .df.elastic.lasso.mrmr.dd,
     target_indices = c(1),
     solution_count = 1,
     feature_count = length(.feats.lasso)
   )
-  
+
   .feats.mrmr <- .df.elastic.lasso.mrmr.dd.dd.filter@feature_names[.df.elastic.lasso.mrmr.dd.dd.filter@filters$`1`[, 1]]
-  
+
   .feats.mrmr_matrix <- cbind(.df.elastic.lasso.mrmr.dd.dd.filter@filters$`1`, .df.elastic.lasso.mrmr.dd.dd.filter@scores$`1`)
-  
+
   rownames(.feats.mrmr_matrix) <- .feats.mrmr
   colnames(.feats.mrmr_matrix) <- c('order', 'score')
-  
+
   .feats.mrmr_matrix %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = 'Gene_ID') %>%
@@ -122,7 +122,7 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
     dplyr::arrange(-score) %>%
     dplyr::pull(Gene_ID) ->
     .feats.mrmr_sort
-  
+
   # 5. ifs for evaluation
   .ifs.res <- foreach(
     i = 10:length(.feats.mrmr_sort),
@@ -149,10 +149,10 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
   #   dplyr::arrange(-sub)
   .optimal <- .ifs.res %>%
     dplyr::arrange(-eval)
-  
+
   .optimal_feats_num <- .optimal %>% dplyr::pull(num) %>% head(1)
   .optimal_parameter <- .optimal %>% dplyr::pull(best_tune) %>% head(1) %>% .[[1]]
-  
+
   list(
     panel = head(.feats.mrmr_sort, .optimal_feats_num),
     hyperparameter = .optimal_parameter
