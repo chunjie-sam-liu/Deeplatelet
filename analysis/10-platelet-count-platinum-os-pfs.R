@@ -341,3 +341,7 @@ ggsave(
   width = 8,
   height = 9
 )
+
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda/10-platelet-count-platinum-os-pfs.rda')
