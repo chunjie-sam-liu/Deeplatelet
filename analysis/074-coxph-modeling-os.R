@@ -247,5 +247,5 @@ test2_roc %>%
 
 
 # Save image --------------------------------------------------------------
-
+save.image(file = 'data/rda/074-coxph-modeling-os.rda')
 
