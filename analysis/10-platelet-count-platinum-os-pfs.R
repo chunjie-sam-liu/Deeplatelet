@@ -107,7 +107,8 @@ metadata.os <- as.data.frame(total416.os.se@colData) %>% tibble::as_tibble() %>%
   dplyr::mutate(platelet_count = as.numeric(platelet_count)) %>% 
   dplyr::filter(!is.na(platelet_count)) %>% 
   dplyr::mutate(PLT = as.factor(ifelse(platelet_count > 350, 'PLT>350', 'PLT<=350'))) %>% 
-  dplyr::mutate(ca125_group = as.factor(ifelse(CA125 > 1200, 'CA125>1200', 'CA125<1200')))
+  dplyr::mutate(ca125_group = as.factor(ifelse(CA125 > 1200, 'CA125>1200', 'CA125<1200'))) %>% 
+  dplyr::mutate(age_group = as.factor(ifelse(age > 50, 'age>50', 'age<=50')))
   
 
 coxph(formula = Surv(time = duration, event = event) ~ platelet_count, data = metadata.os)
@@ -115,7 +116,35 @@ coxph(formula = Surv(time = duration, event = event) ~ platelet_count, data = me
 survminer::ggsurvplot(
   fit = survfit(Surv(time = duration, event = event) ~ PLT, data = metadata.os),
   data = metadata.os,
-  pval = TRUE
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Overall survival probability',
+  title = 'Overall survival with platelet count'
+) ->
+  os_platelet_count
+
+ggsave(
+  filename ='os-platelet-count.pdf',
+  plot = print(os_platelet_count, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
 )
 
 
@@ -124,26 +153,120 @@ coxph(formula = Surv(time = duration, event = event) ~ CA125, data = metadata.os
 survminer::ggsurvplot(
   fit = survfit(Surv(time = duration, event = event) ~ ca125_group, data = metadata.os),
   data = metadata.os,
-  pval = TRUE
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Overall survival probability',
+  title = 'Overall survival with CA125 level'
+) ->
+  os_ca125
+
+ggsave(
+  filename ='os-ca125.pdf',
+  plot = print(os_ca125, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
+
+
+coxph(formula = Surv(time = duration, event = event) ~ age, data = metadata.os)
+
+survminer::ggsurvplot(
+  fit = survfit(Surv(time = duration, event = event) ~ age_group, data = metadata.os),
+  data = metadata.os,
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Overall survival probability',
+  title = 'Overall survival with age'
+) ->
+  os_age
+
+ggsave(
+  filename ='os-age.pdf',
+  plot = print(os_age, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
 )
 
 # Platelet count pfs ------------------------------------------------------
 
 total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz')
 metadata.pfs <- as.data.frame(total434.pfs.se@colData) %>% tibble::as_tibble() %>% 
-  # dplyr::filter(duration > 0) %>% 
-  # dplyr::mutate(duration = ifelse(duration > 60, 60, duration)) %>% 
+  dplyr::filter(duration > 0) %>%
+  dplyr::mutate(duration = ifelse(duration > 60, 60, duration)) %>%
   plyr::mutate(platelet_count = as.numeric(platelet_count)) %>% 
   dplyr::filter(!is.na(platelet_count)) %>% 
-  dplyr::mutate(PLT = as.factor(ifelse(platelet_count > 400, 'PLT>400', 'PLT<=400'))) %>% 
-  dplyr::mutate(ca125_group = as.factor(ifelse(CA125 > 1200, 'CA125>1200', 'CA125<1200')))
+  dplyr::mutate(PLT = as.factor(ifelse(platelet_count > 350, 'PLT>350', 'PLT<=350'))) %>% 
+  dplyr::mutate(ca125_group = as.factor(ifelse(CA125 > 1200, 'CA125>1200', 'CA125<=1200'))) %>% 
+  dplyr::mutate(age_group = as.factor(ifelse(age > 50, 'age>50', 'age<=50')))
 
 coxph(formula = Surv(time = duration, event = event) ~ platelet_count, data = metadata.pfs) 
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = duration, event = event) ~ PLT, data = metadata.pfs),
   data = metadata.pfs,
-  pval = TRUE
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Progression free survival probability',
+  title = 'Progression free survival with platelet count'
+) ->
+  pfs_platelet_count
+
+ggsave(
+  filename ='pfs-platelet-count.pdf',
+  plot = print(pfs_platelet_count, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
 )
 
 coxph(formula = Surv(time = duration, event = event) ~ CA125, data = metadata.pfs) 
@@ -151,6 +274,70 @@ coxph(formula = Surv(time = duration, event = event) ~ CA125, data = metadata.pf
 survminer::ggsurvplot(
   fit = survfit(Surv(time = duration, event = event) ~ ca125_group, data = metadata.pfs),
   data = metadata.pfs,
-  pval = TRUE
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Progression free survival probability',
+  title = 'Progression free survival with CA125 level'
+) ->
+  pfs_ca125
+
+ggsave(
+  filename ='pfs-ca125.pdf',
+  plot = print(pfs_ca125, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
 )
 
+
+coxph(formula = Surv(time = duration, event = event) ~ age, data = metadata.pfs)
+
+survminer::ggsurvplot(
+  fit = survfit(Surv(time = duration, event = event) ~ age_group, data = metadata.pfs),
+  data = metadata.pfs,
+  pval = TRUE,
+  pval.method = TRUE,
+  palette = RColorBrewer::brewer.pal(n=4, name = 'Set1'),
+  break.time.by = 20,
+  ggtheme = theme_bw(),
+  
+  risk.table = TRUE,
+  risk.table.y.text.col = TRUE,
+  risk.table.y.text = FALSE,
+  risk.table.fontsize = 6,
+  
+  ncensor.plot = TRUE,
+  surv.median.line = 'hv',
+  
+  legend = 'top',
+  legend.title = 'Group',
+  xlab = 'Time in months',
+  ylab = 'Overall survival probability',
+  title = 'Overall survival with age'
+) ->
+  pfs_age
+
+ggsave(
+  filename ='pfs-age.pdf',
+  plot = print(pfs_age, newpage = FALSE),
+  device = 'pdf',
+  path = 'data/output',
+  width = 8,
+  height = 9
+)
