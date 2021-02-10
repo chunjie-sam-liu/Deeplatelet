@@ -245,3 +245,7 @@ test2_roc %>%
   ) +
   labs(title = 'VC2 data AUC by the years')
 
+
+# Save image --------------------------------------------------------------
+
+
