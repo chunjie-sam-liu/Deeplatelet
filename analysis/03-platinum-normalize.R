@@ -139,8 +139,8 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
   }) -> confounding
   names(confounding) <- .vars
   confounding$na <- unname(which(is.na(.matrix_w_corr_vars[, 'verdict'])))
-  # confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
-  confounding$confounding <- c(confounding$oc, confounding$age, confounding$lib.size, confounding$library)
+  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
+  # confounding$confounding <- c(confounding$oc, confounding$age, confounding$lib.size, confounding$library)
 
   .data_rm_be <- removeBatchEffect(assay(.se), design = .mod, covariates = .svobj$sv[, confounding$confounding])
   SummarizedExperiment(assays = .data_rm_be, colData = .se@colData[colnames(.data_rm_be), ])
