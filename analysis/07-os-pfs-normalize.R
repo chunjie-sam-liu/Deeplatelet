@@ -86,17 +86,17 @@ fn_filter_samples_by_cor <- function(.se, coef = 0.4, type = 'spearman') {
 
 fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size', 'library'), .th_pval = 0.05, .th_var_strong = 0.1) {
   
-  # .vars <- if (! 'platinum' %in% .vars) c(.vars, 'platinum') else .vars
+  .vars <- if (! 'event' %in% .vars) c(.vars, 'event') else .vars
   # create model and null model
-  .mod <-  model.matrix(~class, data = .se@colData)
+  .mod <-  model.matrix(~event, data = .se@colData)
   .mod0 <-  model.matrix(~1, data = .se@colData)
-  .svobj <- sva(dat = assay(.se), mod = .mod, mod0 = .mod0, n.sv = 50)
+  .svobj <- sva(dat = assay(.se), mod = .mod, mod0 = .mod0, n.sv = 100)
   
   # confounding factors with surrogate variables
   # remove the factors that were identified as potential confounding variables from the dataset
   .matrix_w_corr_vars <- foreach(i = 1:ncol(.svobj$sv), .combine = rbind, .packages = c('magrittr')) %dopar% {
     .vars %>% purrr::map_dbl(.f = function(.x) {
-      if (.x %in% c('oc', 'library')) {
+      if (.x %in% c('event', 'oc', 'library')) {
         aov(formula = .svobj$sv[, i] ~ .se@colData[, .x]) %>%
           broom::tidy() %>% dplyr::slice(1) %>% dplyr::pull(p.value)
       } else {
@@ -109,7 +109,12 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
     }) -> .vars_pval
     names(.vars_pval) <- .vars
     
-  .strong_var <- names(sort(x = .vars_pval))[1]
+  # .strong_var <- names(sort(x = .vars_pval))[1]
+    if (.vars_pval['event'] > .th_pval) {
+      .strong_var <- names(sort(x = .vars_pval))[1]
+    } else {
+      .strong_var <- 'event'
+    }
     
     if (.vars_pval[.strong_var] < .th_var_strong) {
       .verdict <- names(.vars_pval[.strong_var])
@@ -126,7 +131,7 @@ fn_remove_unwanted_variables <- function(.se, .vars = c('oc', 'age', 'lib.size',
   }) -> confounding
   names(confounding) <- .vars
   confounding$na <- unname(which(is.na(.matrix_w_corr_vars[, 'verdict'])))
-  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
+  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$event))
   # confounding$confounding <- c(confounding$oc, confounding$age, confounding$lib.size, confounding$library)
   
   .data_rm_be <- removeBatchEffect(assay(.se), design = .mod, covariates = .svobj$sv[, confounding$confounding])
