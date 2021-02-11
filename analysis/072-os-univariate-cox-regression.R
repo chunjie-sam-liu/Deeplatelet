@@ -20,11 +20,13 @@ total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.duration.nor
 
 # Function ----------------------------------------------------------------
 
-fn_expr_duration_event <- function(.se) {
+fn_expr_duration_event <- function(.se, .type = 'os') {
+  .cutoff <- ifelse(.type == 'os', 100, 60)
   .meta <- .se@colData %>% 
     as.data.frame() %>% 
     tibble::as_tibble() %>% 
-    dplyr::select(barcode, oc, duration, event)
+    dplyr::select(barcode, oc, duration, event) %>% 
+    dplyr::mutate(duration = ifelse(duration > .cutoff, .cutoff, duration))
   
   assay(.se) %>% 
     t() %>% 
@@ -109,15 +111,13 @@ fn_lasso <- function(.se, .hr, .type = 'os') {
 }
 # Analysis ----------------------------------------------------------------
 
-total416.os.expr <- fn_expr_duration_event(.se = total416.os.se)
-total434.pfs.expr <- fn_expr_duration_event(.se = total434.pfs.se)
+total416.os.expr <- fn_expr_duration_event(.se = total416.os.se, .type = 'os')
+total434.pfs.expr <- fn_expr_duration_event(.se = total434.pfs.se, .type = 'pfs')
 
 cluster <- multidplyr::new_cluster(n = 20) 
 
-
 multidplyr::cluster_library(cluster, 'magrittr')
 multidplyr::cluster_assign(cluster, fn_cox_model = fn_cox_model, fn_coxr_each_gene = fn_coxr_each_gene)
-
 
 # OS ----------------------------------------------------------------------
 
