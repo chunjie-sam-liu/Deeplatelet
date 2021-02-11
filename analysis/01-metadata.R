@@ -79,6 +79,7 @@ metadata %>%
   dplyr::select(barcode, patient_ID, oc, palindromia, pfs) %>% 
   dplyr::filter(!is.na(pfs)) %>% 
   dplyr::filter(palindromia != 'NA') %>% 
+  dplyr::filter(pfs > 0) %>% 
   dplyr::mutate(palindromia = ifelse(palindromia == '1', 1, 0)) ->
   metadata_pfs
 
@@ -170,6 +171,7 @@ ggsave(
 metadata %>% 
   dplyr::select(barcode, patient_ID, oc, status = alive_type, os) %>% 
   dplyr::filter(status != 'NA') %>% 
+  dplyr::filter(os > 0) %>% 
   dplyr::mutate(status = ifelse(status == 'alive', 0, 1)) ->
   metadata_os
 
