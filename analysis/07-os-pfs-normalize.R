@@ -20,6 +20,7 @@ total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.rds.gz')
 # Function ----------------------------------------------------------------
 
 fn_filter_samples <- function(.se) {
+  
   .m <- apply(X = assay(.se), MARGIN = 2, FUN = function(x) {sum(x) >= 8 * 2e6})
   .se[, .m]
 }
