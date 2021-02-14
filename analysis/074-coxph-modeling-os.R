@@ -16,7 +16,8 @@ total416.df <- feather::read_feather(path = 'data/rda/total416.os.se.norm.coxph.
 
 # Function ----------------------------------------------------------------
 fn_filter_data <- function(.oc, .data = total416.df) {
-  .data %>%
+  .data %>% 
+    dplyr::mutate(duration = ifelse(duration > 100, 100, duration)) %>% 
     dplyr::filter(oc == .oc) %>%
     dplyr::select(-c(barcode, oc))
 }
