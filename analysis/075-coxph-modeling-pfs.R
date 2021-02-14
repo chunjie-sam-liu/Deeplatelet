@@ -17,6 +17,7 @@ total434.df <- feather::read_feather(path = 'data/rda/total434.pfs.se.norm.coxph
 # Function ----------------------------------------------------------------
 fn_filter_data <- function(.oc, .data = total434.df) {
   .data %>% 
+    dplyr::mutate(duration = ifelse(duration > 60, 60, duration)) %>% 
     dplyr::filter(oc == .oc) %>% 
     dplyr::select(-c(barcode, oc))
 }
@@ -245,3 +246,6 @@ test2_roc %>%
   ) +
   labs(title = 'VC2 data AUC by the years')
 
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda/075-coxph-modeling-pfs.rda')
