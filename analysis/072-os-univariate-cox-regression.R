@@ -167,6 +167,7 @@ total434.pfs.expr.coxph %>%
   dplyr::filter(coxp < 0.05) %>% 
   dplyr::filter(name == 'OC521') ->
   total434.pfs.expr.coxph.hazard_ratio
+
 readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 
@@ -175,7 +176,7 @@ readr::write_rds(x = total434.pfs.expr.coxph.hazard_ratio, file = 'data/rda/tota
 total434.se.multicox <- fn_lasso(.se = total434.pfs.se, .hr =total434.pfs.expr.coxph.hazard_ratio, .type = 'pfs')
 
 total434.pfs.expr.coxph.hazard_ratio %>% 
-  # dplyr::filter(ensid %in% total434.se.multicox$ensid) %>% 
+  dplyr::filter(ensid %in% total434.se.multicox$ensid) %>%
   readr::write_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
 # Save image --------------------------------------------------------------
