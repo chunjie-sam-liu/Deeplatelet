@@ -16,8 +16,8 @@ total416.df <- feather::read_feather(path = 'data/rda/total416.os.se.norm.coxph.
 
 # Function ----------------------------------------------------------------
 fn_filter_data <- function(.oc, .data = total416.df) {
-  .data %>% 
-    dplyr::filter(oc == .oc) %>% 
+  .data %>%
+    dplyr::filter(oc == .oc) %>%
     dplyr::select(-c(barcode, oc))
 }
 
@@ -67,20 +67,20 @@ ggsurvplot(
 survConcordance(Surv(duration, event) ~ lp, data = train_new)
 
 train_roc <- tibble::tibble(
-  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
-) %>% 
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+) %>%
   dplyr::mutate(
     survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = train_new),
     auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
     df_survivalROC = purrr::map(survivalROC, function(obj) {
     tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
   })
-) %>% 
-  dplyr::select(-survivalROC) %>% 
-  tidyr::unnest(df_survivalROC) %>% 
+) %>%
+  dplyr::select(-survivalROC) %>%
+  tidyr::unnest(df_survivalROC) %>%
   dplyr::arrange(t, FP, TP)
 
-train_roc %>% 
+train_roc %>%
   ggplot(mapping = aes(x = FP, y = TP)) +
   geom_point() +
   geom_line() +
@@ -88,7 +88,7 @@ train_roc %>%
     data = train_roc %>% dplyr::select(t, auc) %>% unique,
     mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
   ) +
-  facet_wrap(~t) + 
+  facet_wrap(~t) +
   theme_bw() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5),
@@ -120,20 +120,20 @@ survivalROC(
 )
 
 eval_roc <- tibble::tibble(
-  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
-) %>% 
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+) %>%
   dplyr::mutate(
     survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = eval_new),
     auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
     df_survivalROC = purrr::map(survivalROC, function(obj) {
       tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
     })
-  ) %>% 
-  dplyr::select(-survivalROC) %>% 
-  tidyr::unnest(df_survivalROC) %>% 
+  ) %>%
+  dplyr::select(-survivalROC) %>%
+  tidyr::unnest(df_survivalROC) %>%
   dplyr::arrange(t, FP, TP)
 
-eval_roc %>% 
+eval_roc %>%
   ggplot(mapping = aes(x = FP, y = TP)) +
   geom_point() +
   geom_line() +
@@ -141,7 +141,7 @@ eval_roc %>%
     data = eval_roc %>% dplyr::select(t, auc) %>% unique,
     mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
   ) +
-  facet_wrap(~t) + 
+  facet_wrap(~t) +
   theme_bw() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5),
@@ -167,20 +167,20 @@ survConcordance(Surv(duration, event) ~ lp, data = test1_new)
 
 
 test1_roc <- tibble::tibble(
-  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
-) %>% 
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+) %>%
   dplyr::mutate(
     survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = test1_new),
     auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
     df_survivalROC = purrr::map(survivalROC, function(obj) {
       tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
     })
-  ) %>% 
-  dplyr::select(-survivalROC) %>% 
-  tidyr::unnest(df_survivalROC) %>% 
+  ) %>%
+  dplyr::select(-survivalROC) %>%
+  tidyr::unnest(df_survivalROC) %>%
   dplyr::arrange(t, FP, TP)
 
-test1_roc %>% 
+test1_roc %>%
   ggplot(mapping = aes(x = FP, y = TP)) +
   geom_point() +
   geom_line() +
@@ -188,7 +188,7 @@ test1_roc %>%
     data = test1_roc %>% dplyr::select(t, auc) %>% unique,
     mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
   ) +
-  facet_wrap(~t) + 
+  facet_wrap(~t) +
   theme_bw() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5),
@@ -214,20 +214,20 @@ survConcordance(Surv(duration, event) ~ lp, data = test2_new)
 
 
 test2_roc <- tibble::tibble(
-  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
-) %>% 
+  t = 12 * c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+) %>%
   dplyr::mutate(
     survivalROC = purrr::map(.x = t, .f = fn_survivalROC_helper, .d = test2_new),
     auc = purrr::map_dbl(survivalROC, magrittr::extract2, 'AUC'),
     df_survivalROC = purrr::map(survivalROC, function(obj) {
       tibble::as_tibble(obj[c('cut.values', 'TP', 'FP')])
     })
-  ) %>% 
-  dplyr::select(-survivalROC) %>% 
-  tidyr::unnest(df_survivalROC) %>% 
+  ) %>%
+  dplyr::select(-survivalROC) %>%
+  tidyr::unnest(df_survivalROC) %>%
   dplyr::arrange(t, FP, TP)
 
-test2_roc %>% 
+test2_roc %>%
   ggplot(mapping = aes(x = FP, y = TP)) +
   geom_point() +
   geom_line() +
@@ -235,7 +235,7 @@ test2_roc %>%
     data = test2_roc %>% dplyr::select(t, auc) %>% unique,
     mapping = aes(label =sprintf("%.3f", auc), x = 0.5, y = 0.5 )
   ) +
-  facet_wrap(~t) + 
+  facet_wrap(~t) +
   theme_bw() +
   theme(
     axis.text.x = element_text(angle = 90, vjust = 0.5),
