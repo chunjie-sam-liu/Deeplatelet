@@ -203,7 +203,7 @@ test1_roc %>%
 
 test2_new <- test2
 test2_new$lp <- predict(model, newdata = test2)
-test2_new$risk <- ifelse(test2_new$lp > median(train_new$lp), 'high', 'low')
+test2_new$risk <- ifelse(test2_new$lp > median(test2_new$lp), 'high', 'low')
 ggsurvplot(
   fit = survfit(formula = Surv(duration, event) ~ risk, data = test2_new),
   data = test2_new,
