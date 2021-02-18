@@ -216,8 +216,6 @@ fn_surival_plot(.d = pfs.test1, 'EV1', .ylab = "Progression free survival probab
 fn_surival_plot(.d = pfs.test2, 'EV2', .ylab = "Progression free survival probability") %>%
   fn_save_survival_plot(.cohort = 'EV2', .type = 'pfs')
 
-
-
 # AUC ---------------------------------------------------------------------
 os.merge.auc <- fn_auc(os.merge, .type = 'os')
 os.merge.auc$ci <- fn_auc_ci(.d = os.merge, .type = 'os')
@@ -247,7 +245,7 @@ os.merge.auc$tb %>%
   dplyr::bind_rows(os.test2.auc$tb) %>% 
   dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
   ggplot(aes(x = FP, y = TP, color = cohort)) +
-  geom_path() +
+  geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
   scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
   scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
@@ -326,7 +324,7 @@ pfs.merge.auc$tb %>%
   dplyr::bind_rows(pfs.test2.auc$tb) %>% 
   dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
   ggplot(aes(x = FP, y = TP, color = cohort)) +
-  geom_path() +
+  geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
   scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
   scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
