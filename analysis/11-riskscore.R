@@ -6,6 +6,12 @@ library(survival)
 library(survminer)
 library(survivalROC)
 library(ggplot2)
+library(doParallel)
+
+# src ---------------------------------------------------------------------
+
+source("src/utils.R")
+source("src/doparallel.R")
 
 # Function ----------------------------------------------------------------
 fn_load <- function(.file) {
@@ -13,144 +19,221 @@ fn_load <- function(.file) {
   .d <- feather::read_feather(path = .filepath)
 }
 
-fn_surival_plot_function(.d, .ylab = 'Overall survival probability', .title = 'Overall survival data distribution') {
+fn_bootstrap_cindex <- function(.d) {
+  .d %>% 
+    dplyr::sample_n(size = nrow(.d), replace = TRUE) -> 
+    .dd
+  .c <- survConcordance(Surv(durations, event) ~ riskscore, data = .dd)
   
-    ggsurvplot(
+  .c$concordance
+}
+
+fn_cindex_ci <- function(.d) {
+  set.seed(1234)
+  foreach(
+    i = 1:500,
+    .combine = rbind, 
+    .packages = c('magrittr', 'survival', 'survivalROC'),
+    .export = c('fn_bootstrap_cindex')
+  ) %dopar% {
+    fn_bootstrap_cindex(.d)
+  } ->
+    .boot
+  .lower <- quantile(.boot[, 1], 0.025)
+  .upper <- quantile(.boot[, 1], 0.975)
+  glue::glue("{signif(.lower, 3)}-{signif(.upper, 3)}")
+}
+
+fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probability') {
+  
+  .sd <- survdiff(formula = Surv(durations, event) ~ group, data = .d)
+  .kmp <- 1 - pchisq(.sd$chisq, df = length(levels(as.factor(.d$group))) - 1)
+  
+  .cindex <- survConcordance(Surv(durations, event) ~ riskscore, data = .d)
+  .cindex.ci <- fn_cindex_ci(.d)
+  .cindex.label <- glue::glue("C-index: {signif(.cindex$concordance, digits = 3)} ({.cindex.ci})")
+  
+  .d %>% 
+    dplyr::group_by(group) %>% 
+    dplyr::count() %>% 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(lab = glue::glue("{group} ({n})")) ->
+    .legend.label
+  
+  ggsurvplot(
     fit = survfit(formula = Surv(durations, event) ~ group, data = .d),
     data = .d,
-    pval = TRUE,
-    pval.mehtod = TRUE,
+    pval = FALSE,
+    pval.method = TRUE,
+    pval.size = 7,
     palette = RColorBrewer::brewer.pal(n=3, name = 'Set1'),
     break.time.by = 20,
     ggtheme = theme(
+      panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 16, color = 'black'),
       
-      panel.background = element_rect(fill = NA, colour = 'black'),
-      
-      axis.text = element_text(size = 12),
-      axis.title = element_text(size = 16, face='bold', color = 'black')
-      
+      legend.background = element_rect(fill = NA),
+      legend.key = element_rect(fill = NA),
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 14),
     ),
     
     risk.table = TRUE,
     risk.table.y.text.col = TRUE,
     risk.table.y.text = FALSE,
     risk.table.col = 'strata',
-    risk.table.fontsize = 6,
+    risk.table.fontsize = 5,
+    risk.table.height = 0.25,
     
     ncensor.plot = FALSE,
     # surv.median.line = 'hv',
     
-    legend = 'top',
-    # legend.labs = .legend,
-    legend.title = 'Group',
+    legend = "top",
+    legend.labs = .legend.label$group,
+    legend.title = 'Risk',
     xlab = 'Time in months',
-    ylab = .ylab,
-    title = .title
+    ylab = .ylab
+  ) ->
+    .p
+  
+  .p$plot +
+    theme(
+      legend.position = c(0.235, 0.09),
+      legend.direction = "horizontal"
+    ) +
+    annotate(geom = 'text', x = 0, y = 0.2, label = human_read_latex_pval(human_read(.kmp), .s = "Log-rank"), size = 5, hjust = 0, vjust = 0) +
+    annotate(geom = 'text', x = 0, y = 0.12, label = .cindex.label, size = 5, hjust = 0, vjust = 0) +
+    annotate(geom = 'text', x = 0, y = 0.29, label = .cohort, size = 5, hjust = 0, vjust = 0) ->
+    .p$plot
+    
+  .p
+}
+
+fn_save_survival_plot <- function(.obj, .cohort, .type) {
+  .filename <- glue::glue("final-{.type}-{.cohort}.pdf")
+  ggsave(
+    filename = .filename,
+    plot = print(.obj, newpage = FALSE),
+    device = 'pdf',
+    path = "data/output",
+    width = 6,
+    height = 6.3
   )
 }
 
-# Load data ---------------------------------------------------------------
+fn_auc <- function(.d, .type) {
+  .time <- ifelse(.type == 'os', 5 * 12, 3 * 12)
+  survivalROC(
+    Stime = .d$durations,
+    status = .d$event,
+    marker = .d$riskscore,
+    predict.time = .time,
+    method = 'NNE',
+    span = 0.25 * nrow(.d)^(-0.2)
+  )
+}
+
+fn_bootstrap_auc <- function(.d,.type) {
+  .d %>% 
+    dplyr::sample_n(size = nrow(.d), replace = TRUE) -> 
+    .dd
+  
+  .sroc <- fn_auc(.dd, .type = .type)
+  
+  .sroc$AUC
+  
+}
+
+fn_auc_ci <- function(.d, .type = .type) {
+  set.seed(1234)
+  foreach(
+    i = 1:500, 
+    .combine = rbind,
+    .packages = c('magrittr', 'survival', 'survivalROC'),
+    .export = c('fn_bootstrap_auc', 'fn_auc')
+  ) %dopar% {
+    fn_bootstrap_auc(.d, .type = .type)
+  }->
+    .boot
+  .lower <- quantile(.boot[, 1], 0.025)
+  .upper <- quantile(.boot[, 1], 0.975)
+  glue::glue("{signif(.lower, 3)}-{signif(.upper, 3)}")
+  
+}
+
+
+
+# Load os data ---------------------------------------------------------------
 
 os.train <- fn_load(.file = 'os.train.feather')
-os.train$group <- ifelse(os.train$riskscore > median(os.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = os.train)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = os.train),
-  data = os.train,
-  pval = T,
-  title = 'TC data high low risk'
-)
-
 os.val <- fn_load(.file = 'os.val.feather')
-os.val$group <- ifelse(os.val$riskscore > median(os.val$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = os.val)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = os.val),
-  data = os.val,
-  pval = T,
-  title = 'TC data high low risk'
-)
 
-os.merge <- dplyr::bind_rows(os.train, os.val)
-os.merge$group <- ifelse(os.merge$riskscore > median(os.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = os.merge)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = os.merge),
-  data = os.merge,
-  pval = T,
-  title = 'TC data high low risk'
-)
+os.merge <- os.train %>% 
+  dplyr::bind_rows(os.val) %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(riskscore), 'High', 'Low'))
+
+os.test1 <- fn_load(.file = 'os.test1.feather') %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(os.merge$riskscore), 'High', 'Low'))
+
+os.test2 <- fn_load(.file = 'os.test2.feather') %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(os.merge$riskscore), 'High', 'Low'))
 
 
-os.test1 <- fn_load(.file = 'os.test1.feather')
-os.test1$group <- ifelse(os.test1$riskscore > median(os.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = os.test1)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = os.test1),
-  data = os.test1,
-  pval = T,
-  title = 'TC data high low risk'
-)
+# OS survival plot --------------------------------------------------------
+fn_parallel_start(n_cores = 50)
 
-os.test2 <- fn_load(.file = 'os.test2.feather')
-os.test2$group <- ifelse(os.test2$riskscore > median(os.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = os.test2)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = os.test2),
-  data = os.test2,
-  pval = T,
-  title = 'TC data high low risk'
-)
+fn_surival_plot(.d = os.merge, 'TC') %>% 
+  fn_save_survival_plot(.cohort = 'TC', .type = 'os')
+fn_surival_plot(.d = os.test1, 'EV1') %>%
+  fn_save_survival_plot(.cohort = 'EV1', .type = 'os')
+fn_surival_plot(.d = os.test2, 'EV2') %>%
+  fn_save_survival_plot(.cohort = 'EV2', .type = 'os')
 
+
+# Load pfs data -----------------------------------------------------------
 
 pfs.train <- fn_load(.file = 'pfs.train.feather')
-pfs.train$group <- ifelse(pfs.train$riskscore > median(pfs.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = pfs.train)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = pfs.train),
-  data = pfs.train,
-  pval = T,
-  title = 'TC data high low risk'
-)
-
 pfs.val <- fn_load(.file = 'pfs.val.feather')
-pfs.val$group <- ifelse(pfs.val$riskscore > median(pfs.val$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = pfs.val)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = pfs.val),
-  data = pfs.val,
-  pval = T,
-  title = 'TC data high low risk'
-)
 
-pfs.merge <- dplyr::bind_rows(pfs.train, pfs.val)
-pfs.merge$group <- ifelse(pfs.merge$riskscore > median(pfs.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = pfs.merge)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = pfs.merge),
-  data = pfs.merge,
-  pval = T,
-  title = 'TC data high low risk'
-)
+pfs.merge <- pfs.train %>% 
+  dplyr::bind_rows(pfs.val) %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(riskscore), 'High', 'Low'))
+
+pfs.test1 <- fn_load(.file = 'pfs.test1.feather') %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(pfs.merge$riskscore), 'High', 'Low'))
+
+pfs.test2 <- fn_load(.file = 'pfs.test2.feather') %>% 
+  dplyr::mutate(group = ifelse(riskscore > median(pfs.merge$riskscore), 'High', 'Low'))
 
 
-pfs.test1 <- fn_load(.file = 'pfs.test1.feather')
-pfs.test1$group <- ifelse(pfs.test1$riskscore > median(pfs.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = pfs.test1)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = pfs.test1),
-  data = pfs.test1,
-  pval = T,
-  title = 'TC data high low risk'
-)
+# pfs survival plot -------------------------------------------------------
 
-pfs.test2 <- fn_load(.file = 'pfs.test2.feather')
-pfs.test2$group <- ifelse(pfs.test2$riskscore > median(pfs.train$riskscore), 'high', 'low')
-survConcordance(Surv(durations, event) ~ riskscore, data = pfs.test2)
-ggsurvplot(
-  fit = survfit(formula = Surv(durations, event) ~ group, data = pfs.test2),
-  data = pfs.test2,
-  pval = T,
-  title = 'TC data high low risk'
-)
+fn_surival_plot(.d = pfs.merge, 'TC', .ylab = "Progression free survival probability") %>% 
+  fn_save_survival_plot(.cohort = 'TC', .type = 'pfs')
+fn_surival_plot(.d = pfs.test1, 'EV1', .ylab = "Progression free survival probability") %>%
+  fn_save_survival_plot(.cohort = 'EV1', .type = 'pfs')
+fn_surival_plot(.d = pfs.test2, 'EV2', .ylab = "Progression free survival probability") %>%
+  fn_save_survival_plot(.cohort = 'EV2', .type = 'pfs')
 
+
+
+# AUC ---------------------------------------------------------------------
+os.merge.auc <- fn_auc(os.merge, .type = 'os')
+os.merge.auc$ci <- fn_auc_ci(.d = os.merge, .type = 'os')
+os.test1.auc <- fn_auc(os.test1, .type = 'os')
+os.test1.auc$ci <- fn_auc_ci(.d = os.test1, .type = 'os')
+os.test2.auc <- fn_auc(os.test2, .type = 'os')
+os.test2.auc$ci <- fn_auc_ci(.d = os.test2, .type = 'os')
+
+os.merge.auc[c('TP', 'FP')] %>% 
+  tibble::enframe()
+
+
+# -------------------------------------------------------------------------
+
+fn_parallel_stop()
+
+# Save image --------------------------------------------------------------
+
+save.image(file = 'data/rda-backup/11-riskscore.rda')
