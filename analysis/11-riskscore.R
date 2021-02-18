@@ -221,14 +221,157 @@ fn_surival_plot(.d = pfs.test2, 'EV2', .ylab = "Progression free survival probab
 # AUC ---------------------------------------------------------------------
 os.merge.auc <- fn_auc(os.merge, .type = 'os')
 os.merge.auc$ci <- fn_auc_ci(.d = os.merge, .type = 'os')
+os.merge.auc$tb <- os.merge.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'TC')
 os.test1.auc <- fn_auc(os.test1, .type = 'os')
 os.test1.auc$ci <- fn_auc_ci(.d = os.test1, .type = 'os')
+os.test1.auc$tb <- os.test1.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'EV1')
 os.test2.auc <- fn_auc(os.test2, .type = 'os')
 os.test2.auc$ci <- fn_auc_ci(.d = os.test2, .type = 'os')
+os.test2.auc$tb <- os.test2.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'EV2')
 
-os.merge.auc[c('TP', 'FP')] %>% 
-  tibble::enframe()
 
+os.legend.labels <- c(
+  glue::glue("TC   {signif(os.merge.auc$AUC, 3)} ({os.merge.auc$ci})"),
+  glue::glue("EV1 {signif(os.test1.auc$AUC, 3)} ({os.test1.auc$ci})"),
+  glue::glue("EV2 {signif(os.test2.auc$AUC, 3)} ({os.test2.auc$ci})")
+  )
+
+os.merge.auc$tb %>% 
+  dplyr::bind_rows(os.test1.auc$tb) %>% 
+  dplyr::bind_rows(os.test2.auc$tb) %>% 
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
+  ggplot(aes(x = FP, y = TP, color = cohort)) +
+  geom_path() +
+  geom_abline(intercept = 0, slope = 1, linetype = 11) +
+  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_color_manual(
+    name = 'AUC, 5 years',
+    labels = os.legend.labels,
+    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+  ) +
+  theme(
+    panel.background = element_rect(fill = NA),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    
+    axis.line.x.bottom = element_line(color = 'black'),
+    axis.line.y.left = element_line(color = 'black'),
+    axis.ticks.length = unit(x = 0.2, units = 'cm'),
+    axis.text = element_text(color = 'black', size = 14),
+    axis.title = element_text(color = 'black', size = 16),
+    
+    legend.position = c(0.68, 0.2),
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.key.width = unit(1.5, units = 'cm'),
+    legend.spacing = unit(c(0,0,0,0), units = 'cm'),
+    legend.title.align = 1,
+    
+    plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
+    plot.title = element_text(hjust = 0.5, size = 18)
+  ) + 
+  labs(
+    x = "1 - Specificity",
+    y = "Sensitivity",
+    title = "Overall surival"
+  ) ->
+  os.auc.5years.plot;os.auc.5years.plot
+
+ggsave(
+  filename = 'data/output/final-os-5years-auc.pdf',
+  plot = os.auc.5years.plot,
+  device = 'pdf',
+  width = 6,
+  height = 5
+)
+
+
+
+# PFS ---------------------------------------------------------------------
+
+pfs.merge.auc <- fn_auc(pfs.merge, .type = 'pfs')
+pfs.merge.auc$ci <- fn_auc_ci(.d = pfs.merge, .type = 'pfs')
+pfs.merge.auc$tb <- pfs.merge.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'TC')
+pfs.test1.auc <- fn_auc(pfs.test1, .type = 'pfs')
+pfs.test1.auc$ci <- fn_auc_ci(.d = pfs.test1, .type = 'pfs')
+pfs.test1.auc$tb <- pfs.test1.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'EV1')
+pfs.test2.auc <- fn_auc(pfs.test2, .type = 'pfs')
+pfs.test2.auc$ci <- fn_auc_ci(.d = pfs.test2, .type = 'pfs')
+pfs.test2.auc$tb <- pfs.test2.auc[c('TP', 'FP')] %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(cohort = 'EV2')
+
+
+pfs.legend.labels <- c(
+  glue::glue("TC   {signif(pfs.merge.auc$AUC, 3)} ({pfs.merge.auc$ci})"),
+  glue::glue("EV1 {signif(pfs.test1.auc$AUC, 3)} ({pfs.test1.auc$ci})"),
+  glue::glue("EV2 {signif(pfs.test2.auc$AUC, 3)} ({pfs.test2.auc$ci})")
+)
+
+pfs.merge.auc$tb %>% 
+  dplyr::bind_rows(pfs.test1.auc$tb) %>% 
+  dplyr::bind_rows(pfs.test2.auc$tb) %>% 
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
+  ggplot(aes(x = FP, y = TP, color = cohort)) +
+  geom_path() +
+  geom_abline(intercept = 0, slope = 1, linetype = 11) +
+  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_color_manual(
+    name = 'AUC, 3 years',
+    labels = pfs.legend.labels,
+    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+  ) +
+  theme(
+    panel.background = element_rect(fill = NA),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    
+    axis.line.x.bottom = element_line(color = 'black'),
+    axis.line.y.left = element_line(color = 'black'),
+    axis.ticks.length = unit(x = 0.2, units = 'cm'),
+    axis.text = element_text(color = 'black', size = 14),
+    axis.title = element_text(color = 'black', size = 16),
+    
+    legend.position = c(0.68, 0.2),
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.key.width = unit(1.5, units = 'cm'),
+    legend.spacing = unit(c(0,0,0,0), units = 'cm'),
+    legend.title.align = 1,
+    
+    plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
+    plot.title = element_text(hjust = 0.5, size = 18)
+  ) + 
+  labs(
+    x = "1 - Specificity",
+    y = "Sensitivity",
+    title = "Progression free surival"
+  ) ->
+  pfs.auc.3years.plot;pfs.auc.3years.plot
+
+ggsave(
+  filename = 'data/output/final-pfs-3years-auc.pdf',
+  plot = pfs.auc.3years.plot,
+  device = 'pdf',
+  width = 6,
+  height = 5
+)
 
 # -------------------------------------------------------------------------
 
@@ -236,4 +379,4 @@ fn_parallel_stop()
 
 # Save image --------------------------------------------------------------
 
-save.image(file = 'data/rda-backup/11-riskscore.rda')
+save.image(file = 'data/rda/11-riskscore.rda')
