@@ -212,7 +212,10 @@ fn_plot_auroc <- function(.pred, .subset, .dataset) {
     path = 'data/output',
     width = 8, height = 5
   )
-  return(.plot)
+  list(
+    plot = .plot,
+    merge = .merge
+  )
 }
 # convert confusionmatrix to 95 CI
 fn_roc_95ci <- function(.p) {
