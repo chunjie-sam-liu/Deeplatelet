@@ -161,6 +161,7 @@ fn_performace_dataset <- function(.dataset, .models, .total_task) {
 
 # panel <- feats
 panel <- readr::read_rds(file = 'data/rda/00-selected-features.rds.gz')
+# panel$panel <- readr::read_rds(file = 'data/rda/00-elastic-feature.rds.gz')
 total351.task.list <- fn_se2total_task(.se = total351.platinum.se.norm, .feats = panel$panel)
 readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.rds.gz', compress = 'gz')
 
@@ -195,6 +196,70 @@ readr::write_rds(x = models, file = 'data/rda/00-model.rds.gz', compress = 'gz')
 dataset_oc <- list(OC521 = 'OC521', OC44 = 'OC44', OC172 = 'OC172', OC79 = 'OC79')
 performace_dataset <- dataset_oc %>%
   purrr::map(.f = fn_performace_dataset, .models = models, .total_task = total351.task.list)
+
+
+tc <- performace_dataset$OC521$auroc$merge$curve %>% 
+  dplyr::filter(mod == 'Panel') %>% 
+  dplyr::mutate(cohort = 'TC')
+
+ev1 <-  performace_dataset$OC79$auroc$merge$curve %>% 
+  dplyr::filter(mod == 'Panel') %>% 
+  dplyr::mutate(cohort = 'EV1')
+
+ev2 <-  performace_dataset$OC172$auroc$merge$curve %>% 
+  dplyr::filter(mod == 'Panel') %>% 
+  dplyr::mutate(cohort = 'EV2')
+
+legend <- c("TC   0.988 (0.964 - 0.997)", "EV1 0.815 (0.619 - 0.937)", "EV2 0.859 (0.756 - 0.930)")
+dplyr::bind_rows(tc, ev1, ev2) %>% 
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
+  ggplot(aes(x = fpr, y = tpr, color = cohort)) +
+  geom_path(size = 1) +
+  geom_abline(intercept = 0, slope = 1, linetype = 11) +
+  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_color_manual(
+    name = 'AUC',
+    labels = legend,
+    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+  )  +
+  theme(
+    panel.background = element_rect(fill = NA),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    
+    axis.line.x.bottom = element_line(color = 'black'),
+    axis.line.y.left = element_line(color = 'black'),
+    axis.ticks.length = unit(x = 0.2, units = 'cm'),
+    axis.text = element_text(color = 'black', size = 14),
+    axis.title = element_text(color = 'black', size = 16),
+    
+    legend.position = c(0.68, 0.2),
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.key.width = unit(1.5, units = 'cm'),
+    legend.spacing = unit(c(0,0,0,0), units = 'cm'),
+    legend.title.align = 1,
+    
+    plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
+    plot.title = element_text(hjust = 0.5, size = 18)
+  ) +
+  labs(
+    x = "1 - Specificity",
+    y = "Sensitivity",
+    title = "Platinum sensitivity"
+  ) -> platinum_sensitivity_plot
+
+ggsave(
+  filename = 'data/output/final-platinum-sensitivity.pdf',
+  plot = platinum_sensitivity_plot,
+  device = 'pdf',
+  width = 6,
+  height = 5
+)
+  
 
 # Save image --------------------------------------------------------------
 save.image(file = 'data/rda/05-platinum-model-evaluate.rda', ascii = FALSE, compress = TRUE)
