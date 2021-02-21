@@ -376,5 +376,4 @@ ggsave(
 fn_parallel_stop()
 
 # Save image --------------------------------------------------------------
-
 save.image(file = 'data/rda/11-riskscore.rda')
