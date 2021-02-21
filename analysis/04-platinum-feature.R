@@ -74,29 +74,47 @@ fn_select_features <- function(.se, .train_sample, .eval_sample) {
   # 1. standard variation filter
   .feats.sd.median <- fn_sd_median(.df = .df)
 
+  # 2. Elastic net
+  set.seed(123)
+  .elastic <- caret::train(
+    platinum ~ ., data = .df[, c('platinum', .feats.sd.median)],
+    method = "glmnet", family = "binomial",
+    trControl = caret::trainControl("cv", number = 10),
+    tuneLength = 10
+  )
   # 3. lasso expression L1-norm
   # Using lasso to select features based on big data.
-  set.seed(1223)
-  .lasso <- caret::train(
-    platinum ~., data = .df[, c('platinum', .feats.sd.median)],
-    method = "glmnet", family = 'binomial',
-    trControl = trainControl("cv", number = 10),
-    tuneGrid = expand.grid(alpha = 1, lambda = 10^seq(-3, 3, length = 100))
-  )
-
-  .lasso.dgcmatrix <- coef(.lasso$finalModel, .lasso$bestTune$lambda)
-  as.matrix(.lasso.dgcmatrix) %>%
+  # set.seed(1223)
+  # .lasso <- caret::train(
+  #   platinum ~., data = .df[, c('platinum', .feats.sd.median)],
+  #   method = "glmnet", family = 'binomial',
+  #   trControl = trainControl("cv", number = 10),
+  #   tuneGrid = expand.grid(alpha = 1, lambda = 10^seq(-3, 3, length = 100))
+  # )
+  .elastic.dgcmatrix <- coef(.elastic$finalModel, .elastic$bestTune$lambda)
+  as.matrix(.elastic.dgcmatrix) %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = 'Gene_ID') %>%
     tibble::as_tibble() %>%
     dplyr::filter(abs(`1`) > 0, grepl(pattern = 'ENSG', x = Gene_ID)) %>%
     dplyr::arrange(-abs(`1`)) %>%
     dplyr::pull(Gene_ID) ->
-    .feats.lasso
-  readr::write_rds(x = .feats.lasso, file = 'data/rda/00-lasso-feature.rds.gz', compress = 'gz')
+    .feats.elastic
+  readr::write_rds(x = .feats.elastic, file = 'data/rda/00-elastic-feature.rds.gz', compress = 'gz')
+# 
+#   .lasso.dgcmatrix <- coef(.lasso$finalModel, .lasso$bestTune$lambda)
+#   as.matrix(.lasso.dgcmatrix) %>%
+#     as.data.frame() %>%
+#     tibble::rownames_to_column(var = 'Gene_ID') %>%
+#     tibble::as_tibble() %>%
+#     dplyr::filter(abs(`1`) > 0, grepl(pattern = 'ENSG', x = Gene_ID)) %>%
+#     dplyr::arrange(-abs(`1`)) %>%
+#     dplyr::pull(Gene_ID) ->
+#     .feats.lasso
+  # readr::write_rds(x = .feats.lasso, file = 'data/rda/00-lasso-feature.rds.gz', compress = 'gz')
 
   # 4. mrmr
-
+  .feats.lasso <- .feats.elastic
   .df.elastic.lasso <- .df[, c('platinum', .feats.lasso)]
 
   .df.elastic.lasso.mrmr.dd <- mRMRe::mRMR.data(data = .df.elastic.lasso)
