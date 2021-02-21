@@ -41,7 +41,10 @@ total434.pfs.expr.coxph.hazard_ratio.df <- total434.pfs.se[total434.pfs.expr.cox
 feather::write_feather(x = total416.os.expr.coxph.hazard_ratio.df, path = 'data/rda/total416.os.se.norm.coxph.feather')
 feather::write_feather(x = total434.pfs.expr.coxph.hazard_ratio.df, path = 'data/rda/total434.pfs.se.norm.coxph.feather')
 
-
+# test features
+total434.pfs.se[total416.os.expr.coxph.hazard_ratio$ensid,] %>% 
+  fn_se2df() %>% 
+  feather::write_feather(path = 'data/rda/total434.pfs.se.norm.coxph.test.feather')
 
 # Save image --------------------------------------------------------------
 
