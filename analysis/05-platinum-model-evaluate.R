@@ -24,23 +24,23 @@ total351.platinum.se.norm <- readr::read_rds(file = 'data/rda/total351.platinum.
 
 fn_se2total_task <- function(.se, .feats, .dataset = list(train = 'OC521', eval = 'OC44', test172 = 'OC172', test79 = 'OC79')) {
   # SE to task
-  
+
   # Convert all se to mlr task
   .task.panel <- fn_se2task(.se = .se[.feats, ], .id = 'Panel-task')
-  
+
   # Samples for panel
   .samples.panel <- purrr::map(.x = .dataset, .f = fn_task_inds, .se = .se[.feats, ])
   names(.samples.panel) <- glue::glue('panel.{names(.samples.panel)}')
-  
+
   # Filter samples with no ca125
   .se_ca125 <- .se[.feats, !is.na(.se@colData$CA125)]
   .task.ca125 <- fn_se2task_ca125(.se = .se_ca125, .id = 'CA125-task')
   .task.panel.ca125 <- fn_se2task_panel_ca125(.se = .se_ca125, .id = 'Panel-CA125-task')
-  
+
   # Samples for ca125
   .samples.ca125 <- purrr::map(.x = .dataset, .f = fn_task_inds, .se = .se_ca125[.feats, ])
   names(.samples.ca125) <- glue::glue('ca125.{names(.samples.ca125)}')
-  
+
   # Return data
   list(
     task = list(
@@ -90,34 +90,34 @@ fn_tune_hyperparameters <- function(.task, .samples) {
   .task_rownames <- rownames(mlr::getTaskData(task = .task_for_tunes))
   .train.inds <- match(x = names(.samples[[1]]), .task_rownames)
   .test.inds <- match(x = names(c(.samples[[3]])), .task_rownames)
-  
+
   # fix the train and test samples with sample index.
   .holdout <-  mlr::makeFixedHoldoutInstance(
     train.inds = .train.inds, test.inds = .test.inds,
     size = mlr::getTaskSize(.task_for_tunes)
   )
-  
+
   # using svm learner with predict type 'prob'
   .learner <- mlr::makeLearner(cl = 'classif.ksvm', id = 'svm-learner', predict.type = 'prob')
-  
+
   # hypterparameters search space
   .hypterparameters <- ParamHelpers::makeParamSet(
     ParamHelpers::makeNumericParam("C", lower = -10, upper = 10, trafo = function(x) 10 ^ x),
     ParamHelpers::makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 10 ^ x)
   )
-  
+
   # hypterparameter optimize algorithm Random tuning
   .tune_algorithm <-  mlr::makeTuneControlRandom(
     same.resampling.instance = TRUE, maxit = 5000L
   )
-  
+
   # configue
   mlr::configureMlr(
     show.info = FALSE,
     on.learner.error = 'warn',
     on.measure.not.applicable = 'warn'
   )
-  
+
   # tuning
   .tune_result <-  mlr::tuneParams(
     learner = .learner, task = .task_for_tunes,
@@ -126,16 +126,16 @@ fn_tune_hyperparameters <- function(.task, .samples) {
     par.set = .hypterparameters,
     control = .tune_algorithm
   )
-  
+
   # plot random search and test mean auc
   fn_plot_tune_path(.tune_result = .tune_result, .task_id = .task_id)
-  
+
   # tuned learner
   .leaner_tuned <- mlr::setHyperPars(learner = .learner, par.vals = .tune_result$x)
   .model_tuned <-  mlr::train(learner = .leaner_tuned, task = .task, subset = .samples[[1]])
-  
+
   # .d <- predict(object = .model_tuned, task = .total_task$task$ca125, subset = .subset$ca125)
-  
+
   return(.model_tuned)
 }
 
@@ -198,21 +198,21 @@ performace_dataset <- dataset_oc %>%
   purrr::map(.f = fn_performace_dataset, .models = models, .total_task = total351.task.list)
 
 
-tc <- performace_dataset$OC521$auroc$merge$curve %>% 
-  dplyr::filter(mod == 'Panel') %>% 
+tc <- performace_dataset$OC521$auroc$merge$curve %>%
+  dplyr::filter(mod == 'Panel') %>%
   dplyr::mutate(cohort = 'TC')
 
-ev1 <-  performace_dataset$OC79$auroc$merge$curve %>% 
-  dplyr::filter(mod == 'Panel') %>% 
+ev1 <-  performace_dataset$OC79$auroc$merge$curve %>%
+  dplyr::filter(mod == 'Panel') %>%
   dplyr::mutate(cohort = 'EV1')
 
-ev2 <-  performace_dataset$OC172$auroc$merge$curve %>% 
-  dplyr::filter(mod == 'Panel') %>% 
+ev2 <-  performace_dataset$OC172$auroc$merge$curve %>%
+  dplyr::filter(mod == 'Panel') %>%
   dplyr::mutate(cohort = 'EV2')
 
 legend <- c("TC   0.988 (0.964 - 0.997)", "EV1 0.815 (0.619 - 0.937)", "EV2 0.859 (0.756 - 0.930)")
-dplyr::bind_rows(tc, ev1, ev2) %>% 
-  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
+dplyr::bind_rows(tc, ev1, ev2) %>%
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>%
   ggplot(aes(x = fpr, y = tpr, color = cohort)) +
   geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
@@ -227,13 +227,13 @@ dplyr::bind_rows(tc, ev1, ev2) %>%
     panel.background = element_rect(fill = NA),
     panel.grid = element_blank(),
     panel.border = element_blank(),
-    
+
     axis.line.x.bottom = element_line(color = 'black'),
     axis.line.y.left = element_line(color = 'black'),
     axis.ticks.length = unit(x = 0.2, units = 'cm'),
     axis.text = element_text(color = 'black', size = 14),
     axis.title = element_text(color = 'black', size = 16),
-    
+
     legend.position = c(0.68, 0.2),
     legend.background = element_rect(fill = NA),
     legend.key = element_rect(fill = NA),
@@ -242,7 +242,7 @@ dplyr::bind_rows(tc, ev1, ev2) %>%
     legend.key.width = unit(1.5, units = 'cm'),
     legend.spacing = unit(c(0,0,0,0), units = 'cm'),
     legend.title.align = 1,
-    
+
     plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
     plot.title = element_text(hjust = 0.5, size = 18)
   ) +
@@ -259,7 +259,7 @@ ggsave(
   width = 6,
   height = 5
 )
-  
+
 
 # Save image --------------------------------------------------------------
 save.image(file = 'data/rda/05-platinum-model-evaluate.rda', ascii = FALSE, compress = TRUE)
