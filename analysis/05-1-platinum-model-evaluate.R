@@ -47,7 +47,7 @@ fn_tune_hyperparameters <- function(.list, .panel) {
   
   # fix the train and test samples with sample index
   set.seed(123)
-  .cv10d <- mlr::makeResampleDesc(method = "CV", iters = 10, stratify = TRUE)
+  .cv10d <- mlr::makeResampleDesc(method = "CV", iters = 3, stratify = TRUE)
   .cv10i <- mlr::makeResampleInstance(desc = .cv10d, task = .task_for_tunes)
   
   # using svm learner with predict type 'prob'
@@ -150,7 +150,7 @@ readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.
 
 parallelMap::parallelStart(mode = 'multicore', cpus = 100)
 
-#model <- fn_tune_hyperparameters(.list = total351.task.list, .panel = panel)
+model <- fn_tune_hyperparameters(.list = total351.task.list, .panel = panel)
 
 parallelMap::parallelStop()
 readr::write_rds(x = model, file = 'data/rda/00-model-test.rds.gz', compress = 'gz')
