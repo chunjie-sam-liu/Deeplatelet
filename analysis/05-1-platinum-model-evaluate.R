@@ -222,7 +222,7 @@ perf$model_tuned_pred %>%
     y = "Sensitivity",
     title = "Platinum sensitivity"
   ) ->
-  platinum_sensitivity_plot
+  platinum_sensitivity_plot;platinum_sensitivity_plot
 
 ggsave(
   filename = 'data/output/final-platinum-sensitivity.pdf',
