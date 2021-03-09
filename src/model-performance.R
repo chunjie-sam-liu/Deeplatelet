@@ -79,7 +79,21 @@ fn_ensembl_predict <- function(.model, .se, .title = 'OC521') {
 
 
 # Performance -------------------------------------------------------------
-
+fn_auc_ci <- function(.p) {
+  .truth <- mlr::getPredictionTruth(pred = .p)
+  .prob <- mlr::getPredictionProbabilities(pred = .p)
+  .roc <- pROC::roc(response = .truth, predictor = .prob, plot = FALSE, ci = TRUE)
+  .ci <- as.numeric(.roc$ci)
+  names(.ci) <- c("lower", "auc", "upper")
+  .data <- data.frame(
+    fpr = 1 - .roc$specificities,
+    tpr = .roc$sensitivities
+  )
+  list(
+    data = .data,
+    auc = .ci
+  )
+}
 fn_roc_95ci <- function(.p) {
   # acc - Accuracy
   # tpr - True positive rate (Sensitivity, Recall)
@@ -89,10 +103,12 @@ fn_roc_95ci <- function(.p) {
   # kappa - Cohen's kappa
   # f1 - F1 measure
   # mlr::performance(pred = .pred$panel, measures = list(mlr::acc, mlr::tpr, mlr::tnr, mlr::ppv, mlr::npv, mlr::kappa, mlr::f1))
+  .auc <- fn_auc_ci(.p = .p)
   .rocm <- mlr::calculateROCMeasures(.p)
   .kappa_f1 <- mlr::performance(pred = .p, measures = list(mlr::kappa, mlr::f1))
   .rocm_epi <- epiR::epi.tests(dat = t(.rocm$confusion.matrix))
   tibble::tibble(
+    auc = list(unlist(c(.auc$auc[2], .auc$auc[1], .auc$auc[3]))),
     acc = list(unlist(.rocm_epi$rval$diag.acc)),
     tpr = list(unlist(.rocm_epi$rval$se)),
     tnr = list(unlist(.rocm_epi$rval$sp)),
@@ -104,14 +120,14 @@ fn_roc_95ci <- function(.p) {
 
 }
 
-fn_performance <- function(.model_tuned, .task, .samples) {
-  purrr::map(.x = .samples, .f = function(.x) {
-    predict(object = .model_tuned, task = .task, subset = .x) %>%
-      mlr::performance(measures = mlr::auc)
-  }) %>%
-    tibble::enframe() %>%
-    tidyr::unnest()
-}
+# fn_performance <- function(.model_tuned, .task, .samples) {
+#   purrr::map(.x = .samples, .f = function(.x) {
+#     predict(object = .model_tuned, task = .task, subset = .x) %>%
+#       mlr::performance(measures = mlr::auc)
+#   }) %>%
+#     tibble::enframe() %>%
+#     tidyr::unnest()
+# }
 
 fn_ifs_plot <- function(.ifs.res){
   # readr::write_rds(x = .ifs.res, path = file.path(path_analysis_out, '01-ifs-progress.rds.gz'), compress = 'gz')
@@ -227,10 +243,12 @@ fn_roc_95ci <- function(.p) {
   # kappa - Cohen's kappa
   # f1 - F1 measure
   # mlr::performance(pred = .pred$panel, measures = list(mlr::acc, mlr::tpr, mlr::tnr, mlr::ppv, mlr::npv, mlr::kappa, mlr::f1))
+  .auc <- fn_auc_ci(.p = .p)
   .rocm <- mlr::calculateROCMeasures(.p)
   .kappa_f1 <- mlr::performance(pred = .p, measures = list(mlr::kappa, mlr::f1))
   .rocm_epi <- epiR::epi.tests(dat = t(.rocm$confusion.matrix))
   tibble::tibble(
+    auc = list(unlist(c(.auc$auc[2], .auc$auc[1], .auc$auc[3]))),
     acc = list(unlist(.rocm_epi$rval$diag.acc)),
     tpr = list(unlist(.rocm_epi$rval$se)),
     tnr = list(unlist(.rocm_epi$rval$sp)),
