@@ -38,7 +38,7 @@ fn_se2task <- function(.se) {
   list(task = .task, samples = .samples.panel)
 }
 
-fn_tune_hyperparameters <- function(.list, .panel) {
+fn_tune_hyperparameters <- function(.list) {
   .task <- .list$task
   .samples <- .list$samples
   .task_id <- getTaskId(x = .task)
@@ -61,7 +61,7 @@ fn_tune_hyperparameters <- function(.list, .panel) {
   
   # hypterparameter optimize algorithm Random tuning
   .tune_algorithm <-  mlr::makeTuneControlRandom(
-    same.resampling.instance = TRUE, maxit = 500L
+    same.resampling.instance = TRUE, maxit = 50L
   )
   # configue
   mlr::configureMlr(
@@ -69,33 +69,34 @@ fn_tune_hyperparameters <- function(.list, .panel) {
     on.learner.error = 'warn',
     on.measure.not.applicable = 'warn'
   )
-  
+  parallelMap::parallelStart(mode = 'multicore', cpus = 50L)
   # tuning
   .tune_result <-  mlr::tuneParams(
     learner = .learner, task = .task_for_tunes,
     resampling = .cv10i,
-    measures = list(mlr::auc, mlr::mmce, mlr::acc),
+    measures = list(mlr::auc, mlr::acc, mlr::mmce),
     par.set = .hypterparameters,
     control = .tune_algorithm
   )
+  parallelMap::parallelStop()
   
   .hped <- mlr::generateHyperParsEffectData(.tune_result, trafo = TRUE)
   .plot_hpe <- mlr::plotHyperParsEffect(.hped, x = "iteration", y = "auc.test.mean", plot.type = "line")
   .learner_tuned <- mlr::setHyperPars(learner = .learner, par.vals = .tune_result$x)
   .model_tuned <- mlr::train(learner = .learner_tuned, task = .task, subset = .samples$train)
   
-  .model_old <- mlr::train(learner = mlr::setHyperPars(learner = .learner, par.vals = as.list(.panel$hyperparameter)), task = .task, subset = .samples$train)
+  # .model_old <- mlr::train(learner = mlr::setHyperPars(learner = .learner, par.vals = as.list(.panel$hyperparameter)), task = .task, subset = .samples$train)
   
   list(
     hped = .hped,
     model_tuned = .model_tuned,
-    hyperparameter = .tune_result$x,
-    model_old = .model_old
+    hyperparameter = .tune_result$x
   )
 }
 
-fn_pred_perf_metrics <- function(.x, .model) {
+fn_pred_perf_metrics <- function(.x, .task, .samples, .model) {
   .pred <- predict(object = .model, task = .task, subset = .samples[[.x]])
+  
   .pred_perf <- mlr::generateThreshVsPerfData(obj = .pred, measures = list(mlr::fpr, mlr::tpr, mlr::auc), gridsize = length(.samples[[.x]])) %>% 
     .$data %>% 
     tibble::add_column(cohort = .x, .before = 1)
@@ -113,28 +114,31 @@ fn_pred_perf_metrics <- function(.x, .model) {
       .funs = unlist
     ) %>% 
     tibble::add_column(cohort = .x, .before = 1)
-  names(.pred_metrics)  <- c("cohort", 'Accuracy (95% CI)', 'SN (95% CI)', 'SP (95% CI)', 'PPV (95% CI)', 'NPV (95% CI)', 'Kappa', 'F1')
+  # names(.pred_metrics)  <- c("cohort", 'Accuracy (95% CI)', 'SN (95% CI)', 'SP (95% CI)', 'PPV (95% CI)', 'NPV (95% CI)', 'Kappa', 'F1')
+  names(.pred_metrics) <- c("cohort", "AUC (95% CI)", "Accuracy (95% CI)", "SN (95% CI)", "SP (95% CI)", "PPV (95% CI)", "NPV (95% CI)", "Kappa", "F1")
   
   list(
     perf = .pred_perf,
     metrics = .pred_metrics
   )
 }
+
 fn_performance <- function(.list, .model) {
   .task <- .list$task
   .samples <- .list$samples
   .model_tuned <- .model$model_tuned
-  .model_old <- .model$model_old
   
-  .model_tuned_pred <- purrr::map(names(.samples), fn_pred_perf_metrics, .model = .model_tuned)
+  .model_tuned_pred <- purrr::map(
+    names(.samples),
+    fn_pred_perf_metrics,
+    .task = .task,
+    .samples = .samples,
+    .model = .model_tuned
+    )
   names(.model_tuned_pred) <- names(.samples)
   
-  .model_old_pred <- purrr::map(names(.samples), fn_pred_perf_metrics, .model = .model_old)
-  names(.model_old_pred) <- names(.samples)
-  
   list(
-    model_tuned_pred = .model_tuned_pred,
-    model_old_pred = .model_old_pred
+    model_tuned_pred = .model_tuned_pred
   )
 }
 
@@ -142,17 +146,16 @@ fn_performance <- function(.list, .model) {
 # Panel -------------------------------------------------------------------
 
 panel <- readr::read_rds(file = 'data/rda/00-selected-features.rds.gz')
-total351.task.list <- fn_se2task(total351.platinum.se.norm[panel$panel, ])
+total351.task.list <- fn_se2task(total351.platinum.se.norm[panel, ])
 readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.rds.gz', compress = 'gz')
 
 
 # Modeling ----------------------------------------------------------------
 
-parallelMap::parallelStart(mode = 'multicore', cpus = 100)
 
-model <- fn_tune_hyperparameters(.list = total351.task.list, .panel = panel)
 
-parallelMap::parallelStop()
+model <- fn_tune_hyperparameters(.list = total351.task.list)
+
 readr::write_rds(x = model, file = 'data/rda/00-model-test.rds.gz', compress = 'gz')
 
 
@@ -167,7 +170,7 @@ perf$model_tuned_pred %>%
   dplyr::filter(cohort %in% c("merge", "test79", "test172")) %>% 
   dplyr::slice(3, 2, 1) %>% 
   dplyr::mutate(cohort = plyr::revalue(x = cohort, replace = c("merge" = "TC  ", "test79" = "EV1", "test172" = "EV2"))) %>% 
-  dplyr::mutate(label = glue::glue("{cohort} {`Accuracy (95% CI)`}")) ->
+  dplyr::mutate(label = glue::glue("{cohort} {`AUC (95% CI)`}")) ->
   model_tuned_pred_label
 
 model_tuned_pred_label %>% 
@@ -231,16 +234,6 @@ ggsave(
   width = 6,
   height = 5
 )
-
-
-
-
-perf$model_old_pred %>% 
-  purrr::map('perf') %>% 
-  purrr::reduce(.f = dplyr::bind_rows)
-perf$model_old_pred %>% 
-  purrr::map('metrics') %>% 
-  purrr::reduce(.f = dplyr::bind_rows)
 
 
 # Save image --------------------------------------------------------------
