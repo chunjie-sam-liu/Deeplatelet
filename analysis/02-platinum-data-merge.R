@@ -23,7 +23,7 @@ total800_meta <- total800.se@colData %>%
 total800_meta %>% 
   dplyr::inner_join(metadata_platinum, by = 'barcode') %>% 
   dplyr::mutate(platinum = ordered(x = platinum, levels = c('sensitive', 'resistant'))) %>% 
-  as.data.frame()->
+  as.data.frame() ->
   total351_meta_platinum
 
 rownames(total351_meta_platinum) <- total351_meta_platinum$barcode
