@@ -1,4 +1,3 @@
-
 # Library -----------------------------------------------------------------
 
 library(magrittr)
@@ -15,204 +14,201 @@ library(assertthat)
 source(file = 'src/doparallel.R', local = TRUE)
 source(file = 'src/utils.R', local = TRUE)
 source(file = 'src/model-performance.R', local = TRUE)
+
 # Load data ---------------------------------------------------------------
 total351.platinum.se.norm <- readr::read_rds(file = 'data/rda/total351.platinum.se.norm.rds.gz')
 
-
-
 # Function ----------------------------------------------------------------
-
-fn_se2total_task <- function(.se, .feats, .dataset = list(train = 'OC521', eval = 'OC44', test172 = 'OC172', test79 = 'OC79')) {
-  # SE to task
-
-  # Convert all se to mlr task
-  .task.panel <- fn_se2task(.se = .se[.feats, ], .id = 'Panel-task')
-
-  # Samples for panel
-  .samples.panel <- purrr::map(.x = .dataset, .f = fn_task_inds, .se = .se[.feats, ])
-  names(.samples.panel) <- glue::glue('panel.{names(.samples.panel)}')
-
-  # Filter samples with no ca125
-  .se_ca125 <- .se[.feats, !is.na(.se@colData$CA125)]
-  .task.ca125 <- fn_se2task_ca125(.se = .se_ca125, .id = 'CA125-task')
-  .task.panel.ca125 <- fn_se2task_panel_ca125(.se = .se_ca125, .id = 'Panel-CA125-task')
-
-  # Samples for ca125
-  .samples.ca125 <- purrr::map(.x = .dataset, .f = fn_task_inds, .se = .se_ca125[.feats, ])
-  names(.samples.ca125) <- glue::glue('ca125.{names(.samples.ca125)}')
-
-  # Return data
-  list(
-    task = list(
-      panel = .task.panel,
-      ca125 = .task.ca125,
-      panel.ca125 = .task.panel.ca125
-    ),
-    samples = list(
-      panel = .samples.panel,
-      ca125 = .samples.ca125,
-      panel.ca125 = .samples.ca125
-    )
+fn_se2task <- function(.se) {
+  # Task
+  .d <- cbind(
+    t(assay(.se)),
+    data.frame(platinum = factor(x = as.character(.se@colData[, 'platinum']), levels = c('sensitive', 'resistant')))
   )
+  
+  .task <- mlr::makeClassifTask(id = "Panel-task", data = .d, target = "platinum", positive = "sensitive")
+  
+  # Partition
+  .dataset = list(train = 'OC521', eval = 'OC44', test172 = 'OC172', test79 = 'OC79')
+  .samples.panel <- purrr::map(.x = .dataset, .f = function(.x, .se) {
+    .barcode_ind <- which(.se$oc == .x)
+    setNames(object = .barcode_ind, nm = .se@colData[.barcode_ind, 'barcode'])
+  }, .se = .se)
+  
+  .samples.panel$merge <- c(.samples.panel$train, .samples.panel$eval)
+  list(task = .task, samples = .samples.panel)
 }
-
 fn_plot_tune_path <- function(.tune_result, .task_id) {
-  .task_name <- gsub(pattern = '-task', replacement = '', x = .task_id)
-  # save the random search iteration
-  .hped <-  mlr::generateHyperParsEffectData(tune.result = .tune_result, trafo = TRUE)
+  .task_name <- gsub(pattern = "-task", replacement = "", x = .task_id)
+  .hped <- mlr::generateHyperParsEffectData(tune.result = .tune_result, trafo = TRUE)
+  
   .plot_hpe <- mlr::plotHyperParsEffect(
     hyperpars.effect.data = .hped,
-    x = "iteration", y = "auc.test.mean",
+    x = "iteration", y = "acc.test.mean",
     plot.type = "line"
   ) +
     theme_bw() +
     theme() +
-    guides(shape = guide_legend(title = 'Learner Status'), colour = guide_legend(title = 'Learner Status')) +
+    guides(shape = guide_legend(title = "Learner Status"), colour = guide_legend(title = "Learner Status")) +
     labs(
-      x = 'Iteration',
-      y = 'Accuracy test mean',
-      title = glue::glue('Random search iteration for training {.task_name}')
+      x = "Iteration",
+      y = "Accuracy test mean",
+      title = glue::glue("Random search iteration for training {.task_name}")
     )
-  # save ifs to plot
   ggsave(
-    filename = glue::glue('02-Tune-parameter-{.task_name}.pdf'),
+    filename = glue::glue("01-Tune-parameter-{.task_name}.pdf"),
     plot = .plot_hpe,
-    device = 'pdf',
-    path = 'data/output',
+    device = "pdf",
+    path = "data/newoutput",
     width = 8,
     height = 4
   )
+  
+  .plot_hpe
 }
 
-fn_tune_hyperparameters <- function(.task, .samples) {
+fn_tune_hyperparameters <- function(.list) {
+  .task <- .list$task
+  .samples <- .list$samples
   .task_id <- getTaskId(x = .task)
-  .task_for_tunes <- mlr::subsetTask(task = .task, subset = c(.samples[[1]], .samples[[3]]))
-  .task_rownames <- rownames(mlr::getTaskData(task = .task_for_tunes))
-  .train.inds <- match(x = names(.samples[[1]]), .task_rownames)
-  .test.inds <- match(x = names(c(.samples[[3]])), .task_rownames)
-
-  # fix the train and test samples with sample index.
-  .holdout <-  mlr::makeFixedHoldoutInstance(
-    train.inds = .train.inds, test.inds = .test.inds,
-    size = mlr::getTaskSize(.task_for_tunes)
+  
+  .task_for_tunes <- mlr::subsetTask(task = .task, subset = .samples$merge)
+  
+  set.seed(123)
+  .cv10d <- mlr::makeResampleDesc(method = "CV", iters = 3, stratify = TRUE)
+  .cv10i <- mlr::makeResampleInstance(desc = .cv10d, task = .task_for_tunes)
+  .learner <- mlr::makeLearner(
+    cl = "classif.ksvm",
+    id = 'svm-learner',
+    predict.type = 'prob'
   )
-
-  # using svm learner with predict type 'prob'
-  .learner <- mlr::makeLearner(cl = 'classif.ksvm', id = 'svm-learner', predict.type = 'prob')
-
-  # hypterparameters search space
   .hypterparameters <- ParamHelpers::makeParamSet(
     ParamHelpers::makeNumericParam("C", lower = -10, upper = 10, trafo = function(x) 10 ^ x),
     ParamHelpers::makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 10 ^ x)
   )
-
-  # hypterparameter optimize algorithm Random tuning
   .tune_algorithm <-  mlr::makeTuneControlRandom(
-    same.resampling.instance = TRUE, maxit = 5000L
+    same.resampling.instance = TRUE, maxit = 50L
   )
-
-  # configue
   mlr::configureMlr(
     show.info = FALSE,
     on.learner.error = 'warn',
     on.measure.not.applicable = 'warn'
   )
-
-  # tuning
+  parallelMap::parallelStart(mode = 'multicore', cpus = 50L)
   .tune_result <-  mlr::tuneParams(
-    learner = .learner, task = .task_for_tunes,
-    resampling = .holdout,
-    measures = list(mlr::auc, mlr::mmce, mlr::acc),
+    learner = .learner,
+    task = .task_for_tunes,
+    resampling = .cv10i,
+    measures = list(mlr::acc, mlr::mmce, mlr::auc),
     par.set = .hypterparameters,
     control = .tune_algorithm
   )
-
-  # plot random search and test mean auc
+  parallelMap::parallelStop()
+  .learner <- mlr::setHyperPars(learner = .learner, par.vals = .tune_result$x)
   fn_plot_tune_path(.tune_result = .tune_result, .task_id = .task_id)
-
-  # tuned learner
-  .leaner_tuned <- mlr::setHyperPars(learner = .learner, par.vals = .tune_result$x)
-  .model_tuned <-  mlr::train(learner = .leaner_tuned, task = .task, subset = .samples[[1]])
-
-  # .d <- predict(object = .model_tuned, task = .total_task$task$ca125, subset = .subset$ca125)
-
-  return(.model_tuned)
-}
-
-fn_performace_dataset <- function(.dataset, .models, .total_task) {
-  # swith datasets
-  .subset <- fn_dataset_switch(.dataset = .dataset, .total_task = .total_task)
-  # predict dataset with three models
-  .pred <- list(
-    panel = predict(object = .models$panel, task = .total_task$task$panel, subset = .subset$panel),
-    ca125 = predict(object = .models$ca125, task = .total_task$task$ca125, subset = .subset$ca125),
-    panel.ca125 = predict(object = .models$panel.ca125, task = .total_task$task$panel.ca125, subset = .subset$panel.ca125)
+  
+  mlr::train(
+    learner = .learner,
+    task = .task,
+    subset = .samples$merge
   )
-  # plot and save
-  .plot_auroc <- fn_plot_auroc(.pred = .pred, .subset = .subset, .dataset = .dataset)
-  # save the metrics ci95 tables
-  .table_metrics <- fn_metrics(.pred = .pred, .dataset = .dataset)
-  # return auroc plot and metrics table
-  list(auroc = .plot_auroc, metrics = .table_metrics)
+
+}
+
+fn_pred_perf_metrics <- function(.x, .task, .samples, .model) {
+  .pred <- predict(
+    object = .model,
+    task = .task,
+    subset = .samples[[.x]]
+  )
+  
+  .pred_perf <- mlr::generateThreshVsPerfData(obj = .pred, measures = list(mlr::fpr, mlr::tpr, mlr::auc), gridsize = length(.samples[[.x]])) %>% 
+    .$data %>% 
+    tibble::add_column(cohort = .x, .before = 1)
+  
+  .pred_metrics <- fn_roc_95ci(.pred) %>% 
+    dplyr::mutate_if(
+      .predicate = rlang::is_list,
+      .funs = ~purrr::map(.x = ., .f = function(.x) {glue::glue('{sprintf("%.3f", .x[1])} ({sprintf("%.3f", .x[2])} - {sprintf("%.3f", .x[3])})')})) %>% 
+    dplyr::mutate_if(
+      .predicate = rlang::is_double,
+      .funs = ~purrr::map(.x = ., .f = function(.x) {sprintf("%.3f", .x)})
+    ) %>%
+    dplyr::mutate_if(
+      .predicate = rlang::is_list,
+      .funs = unlist
+    ) %>% 
+    tibble::add_column(cohort = .x, .before = 1)
+  # names(.pred_metrics)  <- c("cohort", 'Accuracy (95% CI)', 'SN (95% CI)', 'SP (95% CI)', 'PPV (95% CI)', 'NPV (95% CI)', 'Kappa', 'F1')
+  names(.pred_metrics) <- c("cohort", "AUC (95% CI)", "Accuracy (95% CI)", "SN (95% CI)", "SP (95% CI)", "PPV (95% CI)", "NPV (95% CI)", "Kappa", "F1")
+  
+  list(
+    perf = .pred_perf,
+    metrics = .pred_metrics
+  )
+}
+
+fn_performance <- function(.list, .model) {
+  .task <- .list$task
+  .samples <- .list$samples
+  .model <- .model
+  
+  .model_tuned_pred <- purrr::map(
+    names(.samples),
+    fn_pred_perf_metrics,
+    .task = .task,
+    .samples = .samples,
+    .model = .model
+    )
+  names(.model_tuned_pred) <- names(.samples)
+  
+  list(
+    model_tuned_pred = .model_tuned_pred
+  )
 }
 
 
-# Prepare task ------------------------------------------------------------
+# Panel -------------------------------------------------------------------
 
-# panel <- feats
-panel <- readr::read_rds(file = 'data/rda/00-selected-features.rds.gz')
-# panel$panel <- readr::read_rds(file = 'data/rda/00-elastic-feature.rds.gz')
-total351.task.list <- fn_se2total_task(.se = total351.platinum.se.norm, .feats = panel$panel)
+panel <- readr::read_rds(file = 'data/rda/panel.rds.gz')
+total351.task.list <- fn_se2task(total351.platinum.se.norm[panel, ])
 readr::write_rds(x = total351.task.list, file = 'data/rda/00-total351.task.list.rds.gz', compress = 'gz')
+
 
 # Modeling ----------------------------------------------------------------
 
-# use 50 number of cores
-parallelMap::parallelStart(mode = 'multicore', cpus = 100)
-models <- list(
-  # model with panel
-  panel = fn_tune_hyperparameters(
-    .task = total351.task.list$task$panel,
-    .samples = total351.task.list$samples$panel
-  ),
-  # model with ca125
-  ca125 = fn_tune_hyperparameters(
-    .task = total351.task.list$task$ca125,
-    .samples = total351.task.list$samples$ca125
-  ),
-  # model with panel and ca125
-  panel.ca125 = fn_tune_hyperparameters(
-    .task = total351.task.list$task$panel.ca125,
-    .samples = total351.task.list$samples$panel.ca125
-  )
-)
-parallelMap::parallelStop()
+model <- fn_tune_hyperparameters(.list = total351.task.list)
 
-readr::write_rds(x = models, file = 'data/rda/00-model.rds.gz', compress = 'gz')
+readr::write_rds(x = model, file = 'data/rda/panel.model.rds.gz', compress = 'gz')
 
 
 # Performance -------------------------------------------------------------
 
-dataset_oc <- list(OC521 = 'OC521', OC44 = 'OC44', OC172 = 'OC172', OC79 = 'OC79')
-performace_dataset <- dataset_oc %>%
-  purrr::map(.f = fn_performace_dataset, .models = models, .total_task = total351.task.list)
+perf <- fn_performance(.list = total351.task.list, .model = model)
 
+perf$model_tuned_pred %>% 
+  purrr::map('metrics') %>% 
+  purrr::reduce(.f = dplyr::bind_rows) %>% 
+  dplyr::filter(cohort %in% c("merge", "test79", "test172")) %>% 
+  dplyr::slice(3, 2, 1) %>% 
+  dplyr::mutate(cohort = plyr::revalue(x = cohort, replace = c("merge" = "TC  ", "test79" = "EV1", "test172" = "EV2"))) %>% 
+  dplyr::mutate(label = glue::glue("{cohort} {`AUC (95% CI)`}")) ->
+  model_tuned_pred_label
 
-tc <- performace_dataset$OC521$auroc$merge$curve %>%
-  dplyr::filter(mod == 'Panel') %>%
-  dplyr::mutate(cohort = 'TC')
+model_tuned_pred_label %>% 
+  dplyr::select(-label) %>% 
+  readr::write_tsv(file = 'data/newoutput/merge-platinum-metrics.tsv')
 
-ev1 <-  performace_dataset$OC79$auroc$merge$curve %>%
-  dplyr::filter(mod == 'Panel') %>%
-  dplyr::mutate(cohort = 'EV1')
+model_tuned_pred_label %>% 
+  dplyr::select(-label) %>% 
+  writexl::write_xlsx(path = 'data/newoutput/merge-platinum-metrics.xlsx')
 
-ev2 <-  performace_dataset$OC172$auroc$merge$curve %>%
-  dplyr::filter(mod == 'Panel') %>%
-  dplyr::mutate(cohort = 'EV2')
-
-legend <- c("TC   0.988 (0.964 - 0.997)", "EV1 0.815 (0.619 - 0.937)", "EV2 0.859 (0.756 - 0.930)")
-dplyr::bind_rows(tc, ev1, ev2) %>%
-  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>%
+perf$model_tuned_pred %>% 
+  purrr::map('perf') %>% 
+  purrr::reduce(.f = dplyr::bind_rows) %>% 
+  dplyr::filter(cohort %in% c("merge", "test79", "test172")) %>% 
+  dplyr::mutate(cohort = plyr::revalue(x = cohort, replace = c("merge" = "TC", "test79" = "EV1", "test172" = "EV2"))) %>% 
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
   ggplot(aes(x = fpr, y = tpr, color = cohort)) +
   geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
@@ -220,20 +216,20 @@ dplyr::bind_rows(tc, ev1, ev2) %>%
   scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
   scale_color_manual(
     name = 'AUC',
-    labels = legend,
+    labels = model_tuned_pred_label$label,
     values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
   )  +
   theme(
     panel.background = element_rect(fill = NA),
     panel.grid = element_blank(),
     panel.border = element_blank(),
-
+    
     axis.line.x.bottom = element_line(color = 'black'),
     axis.line.y.left = element_line(color = 'black'),
     axis.ticks.length = unit(x = 0.2, units = 'cm'),
     axis.text = element_text(color = 'black', size = 14),
     axis.title = element_text(color = 'black', size = 16),
-
+    
     legend.position = c(0.68, 0.2),
     legend.background = element_rect(fill = NA),
     legend.key = element_rect(fill = NA),
@@ -242,7 +238,7 @@ dplyr::bind_rows(tc, ev1, ev2) %>%
     legend.key.width = unit(1.5, units = 'cm'),
     legend.spacing = unit(c(0,0,0,0), units = 'cm'),
     legend.title.align = 1,
-
+    
     plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
     plot.title = element_text(hjust = 0.5, size = 18)
   ) +
@@ -250,10 +246,11 @@ dplyr::bind_rows(tc, ev1, ev2) %>%
     x = "1 - Specificity",
     y = "Sensitivity",
     title = "Platinum sensitivity"
-  ) -> platinum_sensitivity_plot
+  ) ->
+  platinum_sensitivity_plot;platinum_sensitivity_plot
 
 ggsave(
-  filename = 'data/output/final-platinum-sensitivity.pdf',
+  filename = 'data/newoutput/merge-platinum-sensitivity.pdf',
   plot = platinum_sensitivity_plot,
   device = 'pdf',
   width = 6,
@@ -262,4 +259,5 @@ ggsave(
 
 
 # Save image --------------------------------------------------------------
-save.image(file = 'data/rda/05-platinum-model-evaluate.rda', ascii = FALSE, compress = TRUE)
+
+save.image(file = 'data/rda/05-platinum-model-evaluate.rda')
