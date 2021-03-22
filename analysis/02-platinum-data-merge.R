@@ -8,7 +8,7 @@ library(DESeq2)
 
 metadata_platinum <- readr::read_rds(file = 'data/rda/metadata-platinum.rds.gz') %>% 
   dplyr::select(barcode, platinum = platinum_sensitivity)
-total800.se <- readr::read_rds(file = 'data/rda/total800.se.rds.gz')
+wuhan.se <- readr::read_rds(file = 'data/rda/wuhan.se.rds.gz')
 # src ---------------------------------------------------------------------
 
 source(file = 'src/doparallel.R', local = TRUE)
@@ -16,11 +16,11 @@ source(file = 'src/doparallel.R', local = TRUE)
 
 # Merge data --------------------------------------------------------------
 
-total800_meta <- total800.se@colData %>% 
+wuhan_meta <- wuhan.se@colData %>% 
   as.data.frame() %>% 
   tibble::as_tibble()
 
-total800_meta %>% 
+wuhan_meta %>% 
   dplyr::inner_join(metadata_platinum, by = 'barcode') %>% 
   dplyr::mutate(platinum = ordered(x = platinum, levels = c('sensitive', 'resistant'))) %>% 
   as.data.frame() ->
@@ -28,7 +28,7 @@ total800_meta %>%
 
 rownames(total351_meta_platinum) <- total351_meta_platinum$barcode
 
-total351.platinum.se <- SummarizedExperiment::SummarizedExperiment(assays = assay(total800.se[,total351_meta_platinum$barcode]), colData = total351_meta_platinum)
+total351.platinum.se <- SummarizedExperiment::SummarizedExperiment(assays = assay(wuhan.se[,total351_meta_platinum$barcode]), colData = total351_meta_platinum)
 
 readr::write_rds(x = total351.platinum.se, file = 'data/rda/total351.platinum.se.rds.gz', compress = 'gz')
 
