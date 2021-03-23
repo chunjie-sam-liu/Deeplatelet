@@ -72,47 +72,60 @@ fn_tune_hyperparameters <- function(.list) {
   .samples <- .list$samples
   .task_id <- getTaskId(x = .task)
   
-  .task_for_tunes <- mlr::subsetTask(task = .task, subset = .samples$merge)
+  .task_for_tunes <- mlr::subsetTask(task = .task, subset = c(.samples$train, .samples$eval))
+  
+  .task_rownames <- rownames(mlr::getTaskData(task = .task_for_tunes))
+  .train.inds <- match(x = names(.samples$train), .task_rownames)
+  .test.inds <- match(x = names(.samples$eval), .task_rownames)
   
   set.seed(123)
-  .cv10d <- mlr::makeResampleDesc(method = "CV", iters = 3, stratify = TRUE)
-  .cv10i <- mlr::makeResampleInstance(desc = .cv10d, task = .task_for_tunes)
+  .holdout <- mlr::makeFixedHoldoutInstance(
+    train.inds = .train.inds,
+    test.inds = .test.inds,
+    size = mlr::getTaskSize(.task_for_tunes)
+  )
+  # .cv10d <- mlr::makeResampleDesc(method = "CV", iters = 5, stratify = TRUE)
+  # .cv10i <- mlr::makeResampleInstance(desc = .cv10d, task = .task_for_tunes)
+
   .learner <- mlr::makeLearner(
     cl = "classif.ksvm",
     id = 'svm-learner',
     predict.type = 'prob'
   )
+  
   .hypterparameters <- ParamHelpers::makeParamSet(
     ParamHelpers::makeNumericParam("C", lower = -10, upper = 10, trafo = function(x) 10 ^ x),
     ParamHelpers::makeNumericParam("sigma", lower = -10, upper = 10, trafo = function(x) 10 ^ x)
   )
   .tune_algorithm <-  mlr::makeTuneControlRandom(
-    same.resampling.instance = TRUE, maxit = 50L
+    same.resampling.instance = TRUE, maxit = 5000L
   )
   mlr::configureMlr(
     show.info = FALSE,
     on.learner.error = 'warn',
     on.measure.not.applicable = 'warn'
   )
-  parallelMap::parallelStart(mode = 'multicore', cpus = 50L)
+  parallelMap::parallelStart(mode = 'multicore', cpus = 100L)
   .tune_result <-  mlr::tuneParams(
     learner = .learner,
     task = .task_for_tunes,
-    resampling = .cv10i,
+    resampling = .holdout,
     measures = list(mlr::acc, mlr::mmce, mlr::auc),
     par.set = .hypterparameters,
     control = .tune_algorithm
   )
   parallelMap::parallelStop()
   .learner <- mlr::setHyperPars(learner = .learner, par.vals = .tune_result$x)
+  
   fn_plot_tune_path(.tune_result = .tune_result, .task_id = .task_id)
   
   mlr::train(
     learner = .learner,
     task = .task,
-    subset = .samples$merge
-  )
-
+    subset = .samples$train
+  ) ->
+    .model
+  .model
 }
 
 fn_pred_perf_metrics <- function(.x, .task, .samples, .model) {
@@ -122,7 +135,18 @@ fn_pred_perf_metrics <- function(.x, .task, .samples, .model) {
     subset = .samples[[.x]]
   )
   
-  .pred_perf <- mlr::generateThreshVsPerfData(obj = .pred, measures = list(mlr::fpr, mlr::tpr, mlr::auc), gridsize = length(.samples[[.x]])) %>% 
+  .pred_data <- .pred$data %>%
+    dplyr::mutate(predictright = ifelse(truth == response, TRUE, FALSE)) %>%
+    dplyr::group_by(truth, predictright) %>%
+    dplyr::count() %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(`truth-predictright` = glue::glue("{truth} {predictright}")) %>%
+    dplyr::select(-c(truth, predictright)) %>%
+    tidyr::spread(key = `truth-predictright`, value = n) %>%
+    dplyr::mutate(total_sample = sum(dplyr::c_across())) %>% 
+    tibble::add_column(cohort = .x, .before = 1)
+  
+  .pred_perf <- mlr::generateThreshVsPerfData(obj = .pred, measures = list(mlr::fpr, mlr::tpr, mlr::auc), gridsize = length(.samples[[.x]]) * 2) %>% 
     .$data %>% 
     tibble::add_column(cohort = .x, .before = 1)
   
@@ -139,12 +163,12 @@ fn_pred_perf_metrics <- function(.x, .task, .samples, .model) {
       .funs = unlist
     ) %>% 
     tibble::add_column(cohort = .x, .before = 1)
-  # names(.pred_metrics)  <- c("cohort", 'Accuracy (95% CI)', 'SN (95% CI)', 'SP (95% CI)', 'PPV (95% CI)', 'NPV (95% CI)', 'Kappa', 'F1')
   names(.pred_metrics) <- c("cohort", "AUC (95% CI)", "Accuracy (95% CI)", "SN (95% CI)", "SP (95% CI)", "PPV (95% CI)", "NPV (95% CI)", "Kappa", "F1")
   
   list(
     perf = .pred_perf,
-    metrics = .pred_metrics
+    metrics = .pred_metrics,
+    pred_data = .pred_data
   )
 }
 
@@ -187,6 +211,10 @@ readr::write_rds(x = model, file = 'data/rda/panel.model.rds.gz', compress = 'gz
 perf <- fn_performance(.list = total351.task.list, .model = model)
 
 perf$model_tuned_pred %>% 
+  purrr::map("pred_data") %>% 
+  purrr::reduce(.f = dplyr::bind_rows)
+
+perf$model_tuned_pred %>% 
   purrr::map('metrics') %>% 
   purrr::reduce(.f = dplyr::bind_rows) %>% 
   dplyr::filter(cohort %in% c("merge", "test79", "test172")) %>% 
@@ -217,7 +245,8 @@ perf$model_tuned_pred %>%
   scale_color_manual(
     name = 'AUC',
     labels = model_tuned_pred_label$label,
-    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    # values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    values = c("#006400", "#00008B",  "#B22222")
   )  +
   theme(
     panel.background = element_rect(fill = NA),
@@ -261,3 +290,4 @@ ggsave(
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/05-platinum-model-evaluate.rda')
+load(file = 'data/rda/05-platinum-model-evaluate.rda')
