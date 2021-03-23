@@ -83,7 +83,7 @@ fn_remove_unwanted_variables <- function(.se, .vars = c("oc", "age", "lib.size",
 
   .mod <- model.matrix(~platinum, data = .se@colData)
   .mod0 <- model.matrix(~1, data = .se@colData)
-  .svobj <- sva(dat = assay(.se), mod = .mod, mod0 = .mod0, n.sv = 50)
+  .svobj <- sva(dat = assay(.se), mod = .mod, mod0 = .mod0, n.sv = 100)
 
   fn_parallel_start(n_cores = 50)
   .matrix_w_corr_vars <- foreach(
@@ -137,7 +137,7 @@ fn_remove_unwanted_variables <- function(.se, .vars = c("oc", "age", "lib.size",
   names(confounding) <- .vars
   confounding$na <- unname(which(is.na(.matrix_w_corr_vars[, "verdict"])))
   
-  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum, confounding$na))
+  confounding$confounding <- setdiff(1:ncol(.svobj$sv), c(confounding$platinum))
 
   readr::write_rds(x = list(confounding = confounding,svobj = .svobj,mod = .mod, dbdat = assay(.se)), file = "data/rda/confounding-svobj.rds")
   
