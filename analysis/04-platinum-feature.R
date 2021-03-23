@@ -36,7 +36,7 @@ fn_sd_median <- function(.se) {
   names(.md[.md > 0])
 }
 fn_select_features <- function(.se) {
-  .train.se <- .se[, .se$oc == "OC521"]
+  .train.se <- .se[, .se$oc %in% c("OC521")]
   
   .feats1 <- fn_sd_median(.se = .train.se)
   
@@ -51,7 +51,7 @@ fn_select_features <- function(.se) {
     data = .df,
     method = "glmnet",
     family = "binomial",
-    trControl = caret::trainControl(method = "cv", number = 5),
+    trControl = caret::trainControl(method = "cv", number = 3),
     tuneGrid =  expand.grid(
       alpha = 1,
       lambda = 10^seq(-3, 3,length = 100)
