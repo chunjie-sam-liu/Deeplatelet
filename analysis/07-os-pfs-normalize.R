@@ -21,49 +21,30 @@ total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.rds.gz')
 
 fn_filter_samples <- function(.se) {
   
-  .m <- apply(X = assay(.se), MARGIN = 2, FUN = function(x) {sum(x) >= 8 * 2e6})
-  .se[, .m]
+  .lgl <- .se$X__mapped_reads > 5e6 & .se$mapping_rate >= 0.3
+  .se[, .lgl]
 }
-fn_check_se <- function(.se) {
-  assert_that(!missing(.se) && is(.se, "SummarizedExperiment"), msg = '.se must be provided with SummarizedExperiment.')
-  assert_that(identical(colnames(assay(.se)), rownames(colData(.se))), msg = 'colnames(assay(data)) must be equal to rownames(colData(data))')
-  
-  assert_that(!any(is.infinite(assay(.se))) && !any(is.na(assay(.se))), msg = 'Inf and NA not allowed in .se.')
-  assert_that(!any(assay(.se) < 0), msg = 'Negative value not allowed in .se.')
-  assert_that(!all(assay(.se) == 0), msg = 'All value in .se are 0.')
-  assert_that(!any((assay(.se) %% 1) != 0), msg = 'Value in .se must be raw counts.')
-}
+
 fn_filter_genes_deseq_normalize <- function(.se, minCounts = 10, fSample = 0.9, thres = 3) {
-  # 1. Remove genes with 0.9 samples have minimum read counts 10
-  # 2. Filter hyper variants
-  # 3. Use DESeq vst to transform the raw counts.
-  # Check SummarizedExperiment
-  fn_check_se(.se)
   
-  # Filter genes with minCounts and fSample
-  keep_genes <- apply(X = assay(.se), MARGIN = 1, FUN = function(x) {
+  .keep_genes <- apply(X = assay(.se), MARGIN = 1, FUN = function(x) {
     sum(x >= minCounts) / length(x) > fSample
   })
-  .se_filter_genes <- .se[keep_genes, ]
-  message(glue::glue("Notice: {nrow(.se) - nrow(.se_filter_genes)} genes filtered by minimun counts 10 and fraction of samples 0.9. {nrow(.se_filter_genes)} genes remained."))
-  
-  # Using inequality to filter hypervariants
-  # classes <- .se_filter_genes@colData$platinum
+  .se_filter_genes <- .se[.keep_genes, ]
   
   assay(.se_filter_genes) %>% 
     apply(MARGIN = 1, FUN = ineq::ineq, type = 'var') %>% 
     tibble::enframe() %>% 
     dplyr::filter(value < thres) %>% 
     dplyr::pull(name) -> 
-    keep_genes
-  .se_filter_genes_ineq <- .se_filter_genes[keep_genes, ]
-  message(glue::glue("Notice: {nrow(.se_filter_genes) - nrow(.se_filter_genes_ineq)} hypervariant genes filtered. {nrow(.se_filter_genes_ineq)} genes remained."))
+    .keep_genes
+  .se_filter_genes_ineq <- .se_filter_genes[.keep_genes, ]
   
   # DESeq vst transformation
-  vst <- varianceStabilizingTransformation(object = assay(.se_filter_genes_ineq), fitType = 'local')
+  .vst <- varianceStabilizingTransformation(object = assay(.se_filter_genes_ineq), fitType = 'local')
   
   # Return SE
-  SummarizedExperiment(assays = as.matrix(vst), colData = as.data.frame(colData(.se_filter_genes_ineq)))
+  SummarizedExperiment(assays = as.matrix(.vst), colData = as.data.frame(colData(.se_filter_genes_ineq)))
 }
 fn_filter_samples_by_cor <- function(.se, coef = 0.4, type = 'spearman') {
   # Filter the samples with lower correlation.
