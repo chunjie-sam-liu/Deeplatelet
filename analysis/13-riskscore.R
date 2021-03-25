@@ -15,8 +15,8 @@ source("src/doparallel.R")
 
 # Function ----------------------------------------------------------------
 fn_load <- function(.file) {
-  .filepath = glue::glue('data/rda/riskscore/{.file}')
-  .d <- feather::read_feather(path = .filepath)
+  .filepath = glue::glue('data/rda/riskscore/{.file}.test.tsv')
+  readr::read_tsv(file = .filepath)
 }
 
 fn_bootstrap_cindex <- function(.d) {
@@ -106,7 +106,6 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probab
     annotate(geom = 'text', x = 0, y = 0.12, label = .cindex.label, size = 5, hjust = 0, vjust = 0) +
     annotate(geom = 'text', x = 0, y = 0.29, label = .cohort, size = 5, hjust = 0, vjust = 0) ->
     .p$plot
-    
   .p
 }
 
@@ -116,7 +115,7 @@ fn_save_survival_plot <- function(.obj, .cohort, .type) {
     filename = .filename,
     plot = print(.obj, newpage = FALSE),
     device = 'pdf',
-    path = "data/output",
+    path = "data/newoutput",
     width = 6,
     height = 6.3
   )
@@ -166,55 +165,53 @@ fn_auc_ci <- function(.d, .type = .type) {
 
 # Load os data ---------------------------------------------------------------
 
-os.train <- fn_load(.file = 'os.train.feather')
-os.val <- fn_load(.file = 'os.val.feather')
+os.train <- fn_load(.file = "os.train")
+os.val <- fn_load(.file = 'os.val')
 
 os.merge <- os.train %>% 
   dplyr::bind_rows(os.val) %>% 
   dplyr::mutate(group = ifelse(riskscore > median(riskscore), 'High', 'Low'))
 
-os.test1 <- fn_load(.file = 'os.test1.feather') %>% 
+os.test1 <- fn_load(.file = 'os.test1') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(os.merge$riskscore), 'High', 'Low'))
 
-os.test2 <- fn_load(.file = 'os.test2.feather') %>% 
+os.test2 <- fn_load(.file = 'os.test2') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(os.merge$riskscore), 'High', 'Low'))
 
 
 # OS survival plot --------------------------------------------------------
-fn_parallel_start(n_cores = 50)
-
 fn_surival_plot(.d = os.merge, 'TC') %>% 
-  fn_save_survival_plot(.cohort = 'TC', .type = 'os')
+  fn_save_survival_plot(.cohort = 'TC', .type = 'OS')
 fn_surival_plot(.d = os.test1, 'EV1') %>%
-  fn_save_survival_plot(.cohort = 'EV1', .type = 'os')
+  fn_save_survival_plot(.cohort = 'EV1', .type = 'OS')
 fn_surival_plot(.d = os.test2, 'EV2') %>%
-  fn_save_survival_plot(.cohort = 'EV2', .type = 'os')
+  fn_save_survival_plot(.cohort = 'EV2', .type = 'OS')
 
 
 # Load pfs data -----------------------------------------------------------
 
-pfs.train <- fn_load(.file = 'pfs.train.feather')
-pfs.val <- fn_load(.file = 'pfs.val.feather')
+pfs.train <- fn_load(.file = 'pfs.train')
+pfs.val <- fn_load(.file = 'pfs.val')
 
 pfs.merge <- pfs.train %>% 
   dplyr::bind_rows(pfs.val) %>% 
   dplyr::mutate(group = ifelse(riskscore > median(riskscore), 'High', 'Low'))
 
-pfs.test1 <- fn_load(.file = 'pfs.test1.feather') %>% 
+pfs.test1 <- fn_load(.file = 'pfs.test1') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(pfs.merge$riskscore), 'High', 'Low'))
 
-pfs.test2 <- fn_load(.file = 'pfs.test2.feather') %>% 
+pfs.test2 <- fn_load(.file = 'pfs.test2') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(pfs.merge$riskscore), 'High', 'Low'))
 
 
 # pfs survival plot -------------------------------------------------------
 
 fn_surival_plot(.d = pfs.merge, 'TC', .ylab = "Progression free survival probability") %>% 
-  fn_save_survival_plot(.cohort = 'TC', .type = 'pfs')
+  fn_save_survival_plot(.cohort = 'TC', .type = 'PFS')
 fn_surival_plot(.d = pfs.test1, 'EV1', .ylab = "Progression free survival probability") %>%
-  fn_save_survival_plot(.cohort = 'EV1', .type = 'pfs')
+  fn_save_survival_plot(.cohort = 'EV1', .type = 'PFS')
 fn_surival_plot(.d = pfs.test2, 'EV2', .ylab = "Progression free survival probability") %>%
-  fn_save_survival_plot(.cohort = 'EV2', .type = 'pfs')
+  fn_save_survival_plot(.cohort = 'EV2', .type = 'PFS')
 
 # AUC ---------------------------------------------------------------------
 os.merge.auc <- fn_auc(os.merge, .type = 'os')
@@ -240,19 +237,22 @@ os.legend.labels <- c(
   glue::glue("EV2 {signif(os.test2.auc$AUC, 3)} ({os.test2.auc$ci})")
   )
 
-os.merge.auc$tb %>% 
-  dplyr::bind_rows(os.test1.auc$tb) %>% 
-  dplyr::bind_rows(os.test2.auc$tb) %>% 
+dplyr::bind_rows(
+  os.merge.auc$tb,
+  os.test1.auc$tb,
+  os.test2.auc$tb
+) %>% 
   dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
   ggplot(aes(x = FP, y = TP, color = cohort)) +
   geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
   scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
-  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1.004), expand = c(0, 0)) +
   scale_color_manual(
     name = 'AUC, 5 years',
     labels = os.legend.labels,
-    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    # values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    values = c("#006400", "#B22222", "#00008B")
   ) +
   theme(
     panel.background = element_rect(fill = NA),
@@ -265,7 +265,7 @@ os.merge.auc$tb %>%
     axis.text = element_text(color = 'black', size = 14),
     axis.title = element_text(color = 'black', size = 16),
     
-    legend.position = c(0.68, 0.2),
+    legend.position = c(0.7, 0.2),
     legend.background = element_rect(fill = NA),
     legend.key = element_rect(fill = NA),
     legend.text = element_text(size = 14),
@@ -280,12 +280,12 @@ os.merge.auc$tb %>%
   labs(
     x = "1 - Specificity",
     y = "Sensitivity",
-    title = "Overall surival"
+    title = "5 years overall surival"
   ) ->
   os.auc.5years.plot;os.auc.5years.plot
 
 ggsave(
-  filename = 'data/output/final-os-5years-auc.pdf',
+  filename = 'data/newoutput/final-OS-5years-auc.pdf',
   plot = os.auc.5years.plot,
   device = 'pdf',
   width = 6,
@@ -319,19 +319,23 @@ pfs.legend.labels <- c(
   glue::glue("EV2 {signif(pfs.test2.auc$AUC, 3)} ({pfs.test2.auc$ci})")
 )
 
-pfs.merge.auc$tb %>% 
-  dplyr::bind_rows(pfs.test1.auc$tb) %>% 
-  dplyr::bind_rows(pfs.test2.auc$tb) %>% 
+
+dplyr::bind_rows(
+  pfs.merge.auc$tb,
+  pfs.test1.auc$tb,
+  pfs.test2.auc$tb
+) %>% 
   dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
   ggplot(aes(x = FP, y = TP, color = cohort)) +
   geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
-  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
-  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(-0.003, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1.004), expand = c(0, 0)) +
   scale_color_manual(
     name = 'AUC, 3 years',
     labels = pfs.legend.labels,
-    values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    # values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
+    values = c("#006400", "#B22222", "#00008B")
   ) +
   theme(
     panel.background = element_rect(fill = NA),
@@ -359,21 +363,19 @@ pfs.merge.auc$tb %>%
   labs(
     x = "1 - Specificity",
     y = "Sensitivity",
-    title = "Progression free surival"
+    title = "3 years progression free surival"
   ) ->
   pfs.auc.3years.plot;pfs.auc.3years.plot
 
 ggsave(
-  filename = 'data/output/final-pfs-3years-auc.pdf',
+  filename = 'data/newoutput/final-PFS-3years-auc.pdf',
   plot = pfs.auc.3years.plot,
   device = 'pdf',
   width = 6,
   height = 5
 )
 
-# -------------------------------------------------------------------------
 
-fn_parallel_stop()
 
 # Save image --------------------------------------------------------------
-save.image(file = 'data/rda/11-riskscore.rda')
+save.image(file = 'data/rda/13-riskscore.rda')
