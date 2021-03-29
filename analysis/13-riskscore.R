@@ -276,7 +276,8 @@ dplyr::bind_rows(
     legend.title.align = 1,
     
     plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
-    plot.title = element_text(hjust = 0.5, size = 18)
+    # plot.title = element_text(hjust = 0.5, size = 18)
+    plot.title = element_blank()
   ) + 
   labs(
     x = "1 - Specificity",
@@ -290,7 +291,7 @@ ggsave(
   plot = os.auc.5years.plot,
   device = 'pdf',
   width = 6,
-  height = 5
+  height = 6
 )
 
 
@@ -359,7 +360,8 @@ dplyr::bind_rows(
     legend.title.align = 1,
     
     plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
-    plot.title = element_text(hjust = 0.5, size = 18)
+    # plot.title = element_text(hjust = 0.5, size = 18)
+    plot.title = element_blank()
   ) + 
   labs(
     x = "1 - Specificity",
@@ -373,7 +375,7 @@ ggsave(
   plot = pfs.auc.3years.plot,
   device = 'pdf',
   width = 6,
-  height = 5
+  height = 6
 )
 
 
