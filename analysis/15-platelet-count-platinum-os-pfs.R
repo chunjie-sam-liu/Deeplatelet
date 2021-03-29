@@ -34,16 +34,27 @@ metadata %>%
     ylab = 'Platelet count (in 10^9/L)',
     title = "Platinum sensitivity correlation with platelet count"
   ) +
-  ggpubr::stat_compare_means() +
-  ggthemes::theme_few() ->
-  plot_platinum_platelet_count
+  ggpubr::stat_compare_means(label.x = 1.1) +
+  scale_color_manual(name = "Platinum", values = c("#B22222", "#00008B"), labels = c("Sensitive", "Resistant")) +
+  scale_x_discrete(labels = c("Sensitive", "Resistant")) +
+  theme(
+    plot.title = element_blank(),
+    panel.background = element_rect(fill = NULL, colour = "black", size = 1),
+    axis.line = element_blank(),
+    legend.position = c(0.5, 0.8),
+    legend.direction = "horizontal",
+    
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+  ) ->
+  plot_platinum_platelet_count;plot_platinum_platelet_count
 ggsave(
   filename = 'platinum-platelet-count-correlation.pdf',
   plot = plot_platinum_platelet_count,
   device = 'pdf',
-  path = 'data/output/',
-  width = 6.5,
-  height = 4.2
+  path = 'data/newoutput/',
+  width = 3,
+  height = 4
 )
 
 
@@ -59,17 +70,27 @@ metadata %>%
     ylab = 'Age',
     title = 'Platinum sensitivity correlation with age'
   ) +
-  ggpubr::stat_compare_means() +
-  ggthemes::theme_few() ->
-  plot_platinum_age
+  ggpubr::stat_compare_means(label.x = 1.1) +
+  scale_color_manual(name = "Platinum", values = c("#B22222", "#00008B"), labels = c("Sensitive", "Resistant")) +
+  scale_x_discrete(labels = c("Sensitive", "Resistant")) +
+  theme(
+    plot.title = element_blank(),
+    panel.background = element_rect(fill = NULL, colour = "black", size = 1),
+    axis.line = element_blank(),
+    legend.position = "None",
+    
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+  )  ->
+  plot_platinum_age;plot_platinum_age
 
 ggsave(
   filename = 'platinum-age-correlation.pdf',
   plot = plot_platinum_age,
   device = 'pdf',
-  path = 'data/output/',
-  width = 6.5,
-  height = 4.2
+  path = 'data/newoutput/',
+  width = 3,
+  height = 4
 )
 
 
@@ -86,16 +107,26 @@ metadata %>%
     ylab = 'Normalized CA125 level',
     title = 'Platinum sensitivity and correlation with CA125'
   ) +
-  ggpubr::stat_compare_means() +
-  ggthemes::theme_few() ->
-  plot_platinum_ca125
+  ggpubr::stat_compare_means(label.x = 1.1) +
+  scale_color_manual(name = "Platinum", values = c("#B22222", "#00008B"), labels = c("Sensitive", "Resistant")) +
+  scale_x_discrete(labels = c("Sensitive", "Resistant")) +
+  theme(
+    plot.title = element_blank(),
+    panel.background = element_rect(fill = NULL, colour = "black", size = 1),
+    axis.line = element_blank(),
+    legend.position = "None",
+    
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+  ) ->
+  plot_platinum_ca125;plot_platinum_ca125
 ggsave(
   filename = 'platinum-ca125-correlation.pdf',
   plot = plot_platinum_ca125,
   device = 'pdf',
-  path = 'data/output/',
-  width = 6.5,
-  height = 4.2
+  path = 'data/newoutput/',
+  width = 3,
+  height = 4
 )
 
 # Platelet count os  -----------------------------------------------
@@ -345,3 +376,4 @@ ggsave(
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/10-platelet-count-platinum-os-pfs.rda')
+load(file = 'data/rda/10-platelet-count-platinum-os-pfs.rda')
