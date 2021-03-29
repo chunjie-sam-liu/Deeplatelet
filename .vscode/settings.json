@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "/home/liucj/tools/anaconda3/bin/python",
+  "python.pythonPath": "venv/bin/python3.9",
   "python.analysis.disabled": ["unresolved-import"],
   "python.analysis.completeFunctionParens": true,
   "python.languageServer": "Pylance",
