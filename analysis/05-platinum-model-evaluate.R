@@ -236,12 +236,15 @@ perf$model_tuned_pred %>%
   purrr::reduce(.f = dplyr::bind_rows) %>% 
   dplyr::filter(cohort %in% c("merge", "test79", "test172")) %>% 
   dplyr::mutate(cohort = plyr::revalue(x = cohort, replace = c("merge" = "TC", "test79" = "EV1", "test172" = "EV2"))) %>% 
-  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) %>% 
+  dplyr::mutate(cohort = factor(cohort, levels = c('TC', 'EV1', 'EV2'))) -> 
+  for_plot
+
+for_plot %>% 
   ggplot(aes(x = fpr, y = tpr, color = cohort)) +
   geom_path(size = 1) +
   geom_abline(intercept = 0, slope = 1, linetype = 11) +
-  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
-  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(-0.003, 1), expand = c(0, 0)) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1.008), expand = c(0, 0)) +
   scale_color_manual(
     name = 'AUC',
     labels = model_tuned_pred_label$label,
@@ -269,7 +272,8 @@ perf$model_tuned_pred %>%
     legend.title.align = 1,
     
     plot.margin = unit(c(1,1,0.5,0.5), units = 'cm'),
-    plot.title = element_text(hjust = 0.5, size = 18)
+    # plot.title = element_text(hjust = 0.5, size = 18)
+    plot.title = element_blank()
   ) +
   labs(
     x = "1 - Specificity",
@@ -283,7 +287,7 @@ ggsave(
   plot = platinum_sensitivity_plot,
   device = 'pdf',
   width = 6,
-  height = 5
+  height = 4
 )
 
 
