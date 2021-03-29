@@ -7,7 +7,7 @@ library(survival)
 
 # Load data ---------------------------------------------------------------
 
-metadata <- readxl::read_xlsx(path = "data/metadata/platelet-prognosis.xlsx", sheet = 1, skip = 1, col_names = F) %>% 
+metadata <- readxl::read_xlsx(path = "data/metadata/platelet-prognosis.xlsx", sheet = 1, skip = 1, col_names = F) %>%
   dplyr::select(1, 2, 3, 9, 10, 11, 12, 14, 17)
 
 names(metadata) <- c("barcode", "hospital", "age", "pfs", "os", "pfs_status", "os_status", "platelet", "platelet_rate")
@@ -18,10 +18,10 @@ showtext::showtext_auto()
 # PFS stat ----------------------------------------------------------------
 
 
-metadata %>% 
-  dplyr::group_by(hospital, pfs_status) %>% 
-  dplyr::count() %>% 
-  dplyr::ungroup() %>% 
+metadata %>%
+  dplyr::group_by(hospital, pfs_status) %>%
+  dplyr::count() %>%
+  dplyr::ungroup() %>%
   ggplot(aes(x = hospital, y = n, fill = pfs_status, label = n)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(position =  position_dodge(width = 1), vjust = 0, hjust = 0.2, size = 6) +
@@ -50,10 +50,10 @@ ggsave(
 # OS stat -----------------------------------------------------------------
 
 
-metadata %>% 
-  dplyr::group_by(hospital, os_status) %>% 
-  dplyr::count() %>% 
-  dplyr::ungroup() %>% 
+metadata %>%
+  dplyr::group_by(hospital, os_status) %>%
+  dplyr::count() %>%
+  dplyr::ungroup() %>%
   ggplot(aes(x = hospital, y = n, fill = os_status, label = n)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(position =  position_dodge(width = 1), vjust = 0, hjust = 0.2, size = 6) +
@@ -81,27 +81,27 @@ ggsave(
 
 # Platelet and rate ------------------------------------------------------
 
-metadata %>% 
+metadata %>%
   dplyr::mutate(
     pfs_status = as.numeric(plyr::revalue(x = pfs_status, replace = c("是" = 1, "否" = 0, "死亡" = 3, "进展" = 3))),
     platelet = as.numeric(platelet),
     platelet_rate = as.numeric(platelet_rate),
     os_status = as.numeric(plyr::revalue(x = os_status, replace = c("生存" = 0, "死亡" = 1)))
-  ) %>% 
+  ) %>%
   dplyr::mutate(pfs = pfs / 30, os = os / 30) ->
   metadata_clean
 
 # PFS platelet ------------------------------------------------------------
 
-metadata_clean %>% 
-  dplyr::filter(pfs > 0) %>% 
+metadata_clean %>%
+  dplyr::filter(pfs > 0) %>%
   dplyr::mutate(pfs = ifelse(pfs > 120, 120, pfs)) %>%
   dplyr::filter(pfs_status != 3)  ->
   metadata_clean_pfs
 
-metadata_clean_pfs %>% 
-  dplyr::filter(!is.na(platelet)) %>% 
-  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, '>350', '<=350'))) %>% 
+metadata_clean_pfs %>%
+  dplyr::filter(!is.na(platelet)) %>%
+  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, '>350', '<=350'))) %>%
   dplyr::mutate(age_group = as.factor(ifelse(age > 50, '>50', '<=50'))) ->
   metadata_clean_pfs_platelet
 
@@ -116,23 +116,23 @@ survminer::ggsurvplot(
     panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16, color = 'black'),
-    
+
     legend.background = element_rect(fill = NA),
     legend.key = element_rect(fill = NA),
     legend.text = element_text(size = 14),
     legend.title = element_text(size = 14),
   ),
-  
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
   risk.table.height = 0.3,
   risk.table.title = "",
-  
+
   ncensor.plot = FALSE,
   surv.median.line = 'hv',
-  
+
   legend = c(0.85, 0.85),
   legend.title = "Platelet count",
   legend.labs = c("<=350", ">350"),
@@ -159,38 +159,49 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
-  
+  ggtheme = theme(
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
-  
-  ncensor.plot = TRUE,
+  risk.table.height = 0.3,
+  risk.table.title = "",
+
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
-  
-  legend = 'top',
-  legend.title = 'Group',
+
+  legend = c(0.85, 0.85),
+  legend.title = "Age",
+  legend.labs = c("<=50", ">50"),
   xlab = 'Time in months',
-  ylab = 'PFS probability',
-  title = 'PFS with age'
+  ylab = 'PFS probability'
 ) ->
-  pfs_age_plot
+  pfs_age_plot;pfs_age_plot
 
 ggsave(
   filename ='PFS-age.pdf',
   plot = print(pfs_age_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 # PFS platelet rate -------------------------------------------------------
 
 
-metadata_clean_pfs %>% 
-  dplyr::filter(!is.na(platelet_rate)) %>% 
+metadata_clean_pfs %>%
+  dplyr::filter(!is.na(platelet_rate)) %>%
   dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 28, 'PLT_rate>28', 'PLT_rate<=28'))) ->
   metadata_clean_pfs_platelet_rate
 
@@ -202,15 +213,15 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme_bw(),
-  
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
-  
+
   ncensor.plot = TRUE,
   surv.median.line = 'hv',
-  
+
   legend = 'top',
   legend.title = 'Group',
   xlab = 'Time in months',
@@ -230,15 +241,15 @@ ggsave(
 
 # OS platelet -------------------------------------------------------------
 
-metadata_clean %>% 
-  dplyr::filter(os > 0) %>% 
+metadata_clean %>%
+  dplyr::filter(os > 0) %>%
   dplyr::mutate(os = ifelse(os > 120, 120, os)) ->
   metadata_clean_os
 
 
-metadata_clean_os %>% 
-  dplyr::filter(!is.na(platelet)) %>% 
-  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, 'PLT>350', 'PLT<=350'))) %>% 
+metadata_clean_os %>%
+  dplyr::filter(!is.na(platelet)) %>%
+  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, 'PLT>350', 'PLT<=350'))) %>%
   dplyr::mutate(age_group = as.factor(ifelse(age > 50, 'age>50', 'age<=50'))) ->
   metadata_clean_os_platelet
 
@@ -249,31 +260,42 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
-  
+  ggtheme = theme(
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+    
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.height = 0.3,
+  risk.table.title = "",
   
-  ncensor.plot = TRUE,
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
   
-  legend = 'top',
-  legend.title = 'Group',
+  legend = c(0.85, 0.85),
+  legend.title = "Platelet count",
+  legend.labs = c("<=350", ">350"),
   xlab = 'Time in months',
   ylab = 'OS probability',
-  title = 'OS with platelet count'
 ) ->
-  os_platelet_plot
+  os_platelet_plot;os_platelet_plot
 
 ggsave(
   filename ='OS-platelet-count.pdf',
   plot = print(os_platelet_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 # OS age -----------------------------------------------------------------
@@ -286,38 +308,49 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
-  
+  ggtheme = theme(
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+    
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.height = 0.3,
+  risk.table.title = "",
   
-  ncensor.plot = TRUE,
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
   
-  legend = 'top',
-  legend.title = 'Group',
+  legend = c(0.85, 0.85),
+  legend.title = "Age",
+  legend.labs = c("<=50", ">50"),
   xlab = 'Time in months',
   ylab = 'OS probability',
-  title = 'OS with age'
 ) ->
-  os_age_plot
+  os_age_plot;os_age_plot
 
 ggsave(
   filename ='OS-age.pdf',
   plot = print(os_age_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 # PFS platelet rate -------------------------------------------------------
 
 
-metadata_clean_os %>% 
-  dplyr::filter(!is.na(platelet_rate)) %>% 
+metadata_clean_os %>%
+  dplyr::filter(!is.na(platelet_rate)) %>%
   dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 28, 'PLT_rate>28', 'PLT_rate<=28'))) ->
   metadata_clean_os_platelet_rate
 
@@ -329,15 +362,15 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme_bw(),
-  
+
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
-  
+
   ncensor.plot = TRUE,
   surv.median.line = 'hv',
-  
+
   legend = 'top',
   legend.title = 'Group',
   xlab = 'Time in months',
