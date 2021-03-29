@@ -101,8 +101,8 @@ metadata_clean %>%
 
 metadata_clean_pfs %>% 
   dplyr::filter(!is.na(platelet)) %>% 
-  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, 'PLT>350', 'PLT<=350'))) %>% 
-  dplyr::mutate(age_group = as.factor(ifelse(age > 50, 'age>50', 'age<=50'))) ->
+  dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, '>350', '<=350'))) %>% 
+  dplyr::mutate(age_group = as.factor(ifelse(age > 50, '>50', '<=50'))) ->
   metadata_clean_pfs_platelet
 
 survminer::ggsurvplot(
@@ -112,30 +112,41 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
+  ggtheme = theme(
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+    
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
   
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.height = 0.3,
+  risk.table.title = "",
   
-  ncensor.plot = TRUE,
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
   
-  legend = 'top',
-  legend.title = 'Group',
+  legend = c(0.85, 0.85),
+  legend.title = "Platelet count",
+  legend.labs = c("<=350", ">350"),
   xlab = 'Time in months',
-  ylab = 'PFS probability',
-  title = 'PFS with platelet count'
+  ylab = 'PFS probability'
 ) ->
-  pfs_platelet_plot
+  pfs_platelet_plot;pfs_platelet_plot
 ggsave(
   filename ='PFS-platelet-count.pdf',
   plot = print(pfs_platelet_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 # PFS age -----------------------------------------------------------------
@@ -347,3 +358,4 @@ ggsave(
 # Save --------------------------------------------------------------------
 
 save.image(file = "data/rda/00-plateletcount.rda")
+load(file = "data/rda/00-plateletcount.rda")
