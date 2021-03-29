@@ -82,9 +82,10 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probab
     risk.table = TRUE,
     risk.table.y.text.col = TRUE,
     risk.table.y.text = FALSE,
-    risk.table.col = 'strata',
-    risk.table.fontsize = 5,
-    risk.table.height = 0.25,
+    # risk.table.col = 'strata',
+    risk.table.fontsize = 6,
+    risk.table.height = 0.3,
+    risk.table.title = "",
     
     ncensor.plot = FALSE,
     # surv.median.line = 'hv',
@@ -117,7 +118,7 @@ fn_save_survival_plot <- function(.obj, .cohort, .type) {
     device = 'pdf',
     path = "data/newoutput",
     width = 6,
-    height = 6.3
+    height = 6
   )
 }
 
@@ -379,3 +380,4 @@ ggsave(
 
 # Save image --------------------------------------------------------------
 save.image(file = 'data/rda/13-riskscore.rda')
+load(file = 'data/rda/13-riskscore.rda')
