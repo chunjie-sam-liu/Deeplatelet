@@ -226,3 +226,4 @@ ggsave(
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/01-medata.rda')
+load(file = 'data/rda/01-medata.rda')
