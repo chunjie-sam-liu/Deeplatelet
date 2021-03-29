@@ -137,7 +137,7 @@ survminer::ggsurvplot(
   legend.title = "Platelet count",
   legend.labs = c("<=350", ">350"),
   xlab = 'Time in months',
-  ylab = 'PFS probability'
+  ylab = 'Progression free survival probability'
 ) ->
   pfs_platelet_plot;pfs_platelet_plot
 ggsave(
@@ -184,7 +184,7 @@ survminer::ggsurvplot(
   legend.title = "Age",
   legend.labs = c("<=50", ">50"),
   xlab = 'Time in months',
-  ylab = 'PFS probability'
+  ylab = 'Progression free survival probability'
 ) ->
   pfs_age_plot;pfs_age_plot
 
@@ -225,7 +225,7 @@ survminer::ggsurvplot(
   legend = 'top',
   legend.title = 'Group',
   xlab = 'Time in months',
-  ylab = 'PFS probability',
+  ylab = 'Progression free survival probability',
   title = 'PFS with platelet rate'
 ) ->
   pfs_platelet_rate_plot;pfs_platelet_rate_plot
@@ -285,7 +285,7 @@ survminer::ggsurvplot(
   legend.title = "Platelet count",
   legend.labs = c("<=350", ">350"),
   xlab = 'Time in months',
-  ylab = 'OS probability',
+  ylab = 'Overall survival probability',
 ) ->
   os_platelet_plot;os_platelet_plot
 
@@ -333,7 +333,7 @@ survminer::ggsurvplot(
   legend.title = "Age",
   legend.labs = c("<=50", ">50"),
   xlab = 'Time in months',
-  ylab = 'OS probability',
+  ylab = 'Overall survival probability',
 ) ->
   os_age_plot;os_age_plot
 
@@ -374,7 +374,7 @@ survminer::ggsurvplot(
   legend = 'top',
   legend.title = 'Group',
   xlab = 'Time in months',
-  ylab = 'OS probability',
+  ylab = 'Overall survival probability',
   title = 'OS with platelet rate'
 ) ->
   os_platelet_rate_plot;os_platelet_rate_plot
