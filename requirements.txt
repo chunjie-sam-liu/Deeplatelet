@@ -83,7 +83,7 @@ pycodestyle==2.6.0
 pycox==0.2.1
 pycparser==2.20
 pyflakes==2.2.0
-Pygments==2.7.3
+Pygments==2.7.4
 pyOpenSSL==20.0.1
 pyparsing==2.4.7
 pyreadr==0.4.0
