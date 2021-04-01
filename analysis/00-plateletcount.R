@@ -17,6 +17,8 @@ showtext::showtext_auto()
 
 # PFS stat ----------------------------------------------------------------
 
+metadata %>% 
+  dplyr::mutate(hospital = factor(hospital, levels = c("河南省肿瘤医院","山东省肿瘤医院","同济医院","中山大学附属第一医院")))
 
 metadata %>%
   dplyr::group_by(hospital, pfs_status) %>%
@@ -26,6 +28,7 @@ metadata %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(position =  position_dodge(width = 1), vjust = 0, hjust = 0.2, size = 6) +
   scale_fill_viridis_d(direction = -1, name = "复发") +
+  scale_x_discrete(limits = (metadata$hospital %>% unique())[c(4, 2,1,3)]) +
   theme(
     panel.background = element_rect(fill = NA, color = 'black', size = 1),
     axis.title.x = element_blank(),
@@ -35,7 +38,7 @@ metadata %>%
     plot.title = element_text(hjust = 0.5, size = 18)
   ) +
   labs(y = "Count") ->
-  pfs_status_plot
+  pfs_status_plot;pfs_status_plot
 
 ggsave(
   filename = "PFS-status.pdf",
