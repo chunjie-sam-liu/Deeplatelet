@@ -122,6 +122,7 @@ fn_save_survival_plot <- function(.obj, .cohort, .type) {
   )
 }
 
+
 fn_auc <- function(.d, .type) {
   .time <- ifelse(.type == 'os', 5 * 12, 3 * 12)
   survivalROC(
@@ -154,12 +155,11 @@ fn_auc_ci <- function(.d, .type = .type) {
     .export = c('fn_bootstrap_auc', 'fn_auc')
   ) %dopar% {
     fn_bootstrap_auc(.d, .type = .type)
-  }->
+  } ->
     .boot
   .lower <- quantile(.boot[, 1], 0.025)
   .upper <- quantile(.boot[, 1], 0.975)
   glue::glue("{signif(.lower, 3)}-{signif(.upper, 3)}")
-  
 }
 
 
