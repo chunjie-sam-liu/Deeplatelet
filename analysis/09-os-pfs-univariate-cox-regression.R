@@ -179,3 +179,4 @@ total434.pfs.expr.coxph.hazard_ratio %>%
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/09-os-pfs-univariate-cox-regression.rda')
+load('data/rda/09-os-pfs-univariate-cox-regression.rda')
