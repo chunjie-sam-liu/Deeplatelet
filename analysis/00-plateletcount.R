@@ -97,7 +97,18 @@ metadata %>%
   metadata_clean
 
 metadata_clean %>% 
-  dplyr::transmute_all()
+  dplyr::mutate(hospital = plyr::revalue(x = hospital, replace = c(
+    "中山大学附属第一医院" = "The First Affiliated Hospital of Sun Yat-sen University",
+    "同济医院" = "Tongji Hospital",
+    "山东省肿瘤医院" = "Shandong Tumour Hospital",
+    "河南省肿瘤医院" = "Henan Tumour Hospital"
+  ))) %>% 
+  dplyr::mutate(pfs_status = as.character(pfs_status)) %>% 
+  dplyr::mutate(pfs_status = plyr::revalue(x = pfs_status, replace = c("1" = "Yes", "0" = "No", "3" = "Dead"))) %>% 
+  dplyr::mutate(os_status = as.character(os_status)) %>% 
+  dplyr::mutate(os_status = plyr::revalue(x = os_status, replace = c("1" = "Dead", "0" = "Alive"))) %>% 
+  dplyr::rename(Barcode = barcode, Hospital = hospital, Age = age, PFS = pfs, OS = os, `PFS status` = pfs_status, `OS status` = os_status, `Platelet count` = platelet, `Platelet rate` = platelet_rate) %>% 
+  writexl::write_xlsx(path = "data/newoutput/biobank-platelet-count.xlsx")
 
 # PFS platelet ------------------------------------------------------------
 
