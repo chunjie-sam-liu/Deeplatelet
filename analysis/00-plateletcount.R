@@ -30,6 +30,7 @@ metadata %>%
   scale_fill_viridis_d(direction = -1, name = "复发") +
   scale_x_discrete(limits = (metadata$hospital %>% unique())[c(4, 2,1,3)]) +
   theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, color = 'black', size = 1),
     axis.title.x = element_blank(),
     axis.text = element_text(size = 16),
@@ -62,6 +63,7 @@ metadata %>%
   geom_text(position =  position_dodge(width = 1), vjust = 0, hjust = 0.2, size = 6) +
   scale_fill_viridis_d(direction = -1, name = "死亡") +
   theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, color = 'black', size = 1),
     axis.title.x = element_blank(),
     axis.text = element_text(size = 16),
@@ -86,13 +88,16 @@ ggsave(
 
 metadata %>%
   dplyr::mutate(
-    pfs_status = as.numeric(plyr::revalue(x = pfs_status, replace = c("是" = 1, "否" = 0, "死亡" = 3, "进展" = 3))),
+    pfs_status = as.numeric(plyr::revalue(x = pfs_status, replace = c("是" = 1, "否" = 0, "死亡" = 3, "进展" = 1))),
     platelet = as.numeric(platelet),
     platelet_rate = as.numeric(platelet_rate),
     os_status = as.numeric(plyr::revalue(x = os_status, replace = c("生存" = 0, "死亡" = 1)))
   ) %>%
   dplyr::mutate(pfs = pfs / 30, os = os / 30) ->
   metadata_clean
+
+metadata_clean %>% 
+  dplyr::transmute_all()
 
 # PFS platelet ------------------------------------------------------------
 
@@ -116,6 +121,7 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16, color = 'black'),
@@ -163,6 +169,7 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16, color = 'black'),
@@ -215,21 +222,32 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
+  ggtheme = theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+    
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
 
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.title = "",
 
-  ncensor.plot = TRUE,
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
 
-  legend = 'top',
-  legend.title = 'Group',
+  legend = c(0.85, 0.85),
+  legend.title = "Platelet rate",
+  legend.labs = c("<=28", ">28"),
   xlab = 'Time in months',
-  ylab = 'Progression free survival probability',
-  title = 'PFS with platelet rate'
+  ylab = 'Progression free survival probability'
 ) ->
   pfs_platelet_rate_plot;pfs_platelet_rate_plot
 ggsave(
@@ -237,8 +255,8 @@ ggsave(
   plot = print(pfs_platelet_rate_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 
@@ -264,6 +282,7 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16, color = 'black'),
@@ -312,6 +331,7 @@ survminer::ggsurvplot(
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
   ggtheme = theme(
+    panel.grid = element_blank(),
     panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16, color = 'black'),
@@ -349,7 +369,7 @@ ggsave(
   height = 6
 )
 
-# PFS platelet rate -------------------------------------------------------
+# OS platelet rate -------------------------------------------------------
 
 
 metadata_clean_os %>%
@@ -364,21 +384,32 @@ survminer::ggsurvplot(
   pval.method = TRUE,
   palette = RColorBrewer::brewer.pal(n=4, name = 'Set1')[c(2, 1)],
   break.time.by = 20,
-  ggtheme = theme_bw(),
+  ggtheme = theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = NA, colour = 'black', size=1.5),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, color = 'black'),
+    
+    legend.background = element_rect(fill = NA),
+    legend.key = element_rect(fill = NA),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+  ),
 
   risk.table = TRUE,
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
-
-  ncensor.plot = TRUE,
+  risk.table.title = "",
+  
+  ncensor.plot = FALSE,
   surv.median.line = 'hv',
-
-  legend = 'top',
-  legend.title = 'Group',
+  
+  legend = c(0.85, 0.85),
+  legend.title = "Platelet rate",
+  legend.labs = c("<=28", ">28"),
   xlab = 'Time in months',
   ylab = 'Overall survival probability',
-  title = 'OS with platelet rate'
 ) ->
   os_platelet_rate_plot;os_platelet_rate_plot
 ggsave(
@@ -386,8 +417,8 @@ ggsave(
   plot = print(os_platelet_rate_plot, newpage = FALSE),
   device = 'pdf',
   path = 'data/newoutput',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 6
 )
 
 
