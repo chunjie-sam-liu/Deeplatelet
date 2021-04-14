@@ -49,3 +49,4 @@ total434.pfs.se[total416.os.expr.coxph.hazard_ratio$ensid,] %>%
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/10-univariate-features-deep-learning.rda')
+load(file = 'data/rda/10-univariate-features-deep-learning.rda')
