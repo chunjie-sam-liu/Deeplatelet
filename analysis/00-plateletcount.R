@@ -124,6 +124,16 @@ metadata_clean_pfs %>%
   dplyr::mutate(age_group = as.factor(ifelse(age > 50, '>50', '<=50'))) ->
   metadata_clean_pfs_platelet
 
+coxph(Surv(time = pfs, event = pfs_status) ~ PLT, data = metadata_clean_pfs_platelet) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
+
 survminer::ggsurvplot(
   fit = survfit(Surv(time = pfs, event = pfs_status) ~ PLT, data = metadata_clean_pfs_platelet),
   data = metadata_clean_pfs_platelet,
@@ -171,6 +181,15 @@ ggsave(
 
 # PFS age -----------------------------------------------------------------
 
+coxph(Surv(time = pfs, event = pfs_status) ~ age_group, data = metadata_clean_pfs_platelet) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = pfs, event = pfs_status) ~ age_group, data = metadata_clean_pfs_platelet),
@@ -223,8 +242,18 @@ ggsave(
 
 metadata_clean_pfs %>%
   dplyr::filter(!is.na(platelet_rate)) %>%
-  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 28, 'PLT_rate>28', 'PLT_rate<=28'))) ->
+  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 43, 'PLT_rate>28', 'PLT_rate<=28'))) ->
   metadata_clean_pfs_platelet_rate
+
+coxph(Surv(time = pfs, event = pfs_status) ~ PLT_rate, data = metadata_clean_pfs_platelet_rate) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = pfs, event = pfs_status) ~ PLT_rate, data = metadata_clean_pfs_platelet_rate),
@@ -256,8 +285,8 @@ survminer::ggsurvplot(
   surv.median.line = 'hv',
   
   legend = c(0.85, 0.85),
-  legend.title = "Platelet rate",
-  legend.labs = c("<=28", ">28"),
+  legend.title = "Big platelet rate",
+  legend.labs = c("<=43", ">43"),
   xlab = 'Time in months',
   ylab = 'Progression free survival probability'
 ) ->
@@ -285,6 +314,16 @@ metadata_clean_os %>%
   dplyr::mutate(PLT = as.factor(ifelse(platelet > 350, 'PLT>350', 'PLT<=350'))) %>%
   dplyr::mutate(age_group = as.factor(ifelse(age > 50, 'age>50', 'age<=50'))) ->
   metadata_clean_os_platelet
+
+coxph(Surv(time = os, event = os_status) ~ PLT, data = metadata_clean_os_platelet) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = os, event = os_status) ~ PLT, data = metadata_clean_os_platelet),
@@ -334,6 +373,15 @@ ggsave(
 
 # OS age -----------------------------------------------------------------
 
+coxph(Surv(time = os, event = os_status) ~ age_group, data = metadata_clean_os_platelet) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = os, event = os_status) ~ age_group, data = metadata_clean_os_platelet),
@@ -386,8 +434,19 @@ ggsave(
 
 metadata_clean_os %>%
   dplyr::filter(!is.na(platelet_rate)) %>%
-  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 28, 'PLT_rate>28', 'PLT_rate<=28'))) ->
+  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 43, 'PLT_rate>28', 'PLT_rate<=28'))) ->
   metadata_clean_os_platelet_rate
+
+coxph(Surv(time = os, event = os_status) ~ PLT_rate, data = metadata_clean_os_platelet_rate) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    low = conf.low,
+    high = conf.high,
+    pval = p.value
+  )
+
 
 survminer::ggsurvplot(
   fit = survfit(Surv(time = os, event = os_status) ~ PLT_rate, data = metadata_clean_os_platelet_rate),
@@ -419,8 +478,8 @@ survminer::ggsurvplot(
   surv.median.line = 'hv',
   
   legend = c(0.85, 0.85),
-  legend.title = "Platelet rate",
-  legend.labs = c("<=28", ">28"),
+  legend.title = "Big platelet rate",
+  legend.labs = c("<=43", ">43"),
   xlab = 'Time in months',
   ylab = 'Overall survival probability',
 ) ->
