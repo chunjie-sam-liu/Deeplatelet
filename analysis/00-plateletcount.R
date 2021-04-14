@@ -249,11 +249,12 @@ survminer::ggsurvplot(
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.height = 0.3,
   risk.table.title = "",
-
+  
   ncensor.plot = FALSE,
   surv.median.line = 'hv',
-
+  
   legend = c(0.85, 0.85),
   legend.title = "Platelet rate",
   legend.labs = c("<=28", ">28"),
@@ -411,6 +412,7 @@ survminer::ggsurvplot(
   risk.table.y.text.col = TRUE,
   risk.table.y.text = FALSE,
   risk.table.fontsize = 6,
+  risk.table.height = 0.3,
   risk.table.title = "",
   
   ncensor.plot = FALSE,
