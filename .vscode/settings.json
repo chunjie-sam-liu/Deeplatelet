@@ -30,7 +30,6 @@
     "venv": true,
     "**/node_modules": true,
     "**/templates": true,
-    "**/rda": true,
     "**/.Rproj.user": true,
     "**/*rds.gz": true
   },
