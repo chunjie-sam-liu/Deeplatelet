@@ -166,8 +166,8 @@ survminer::ggsurvplot(
   legend = c(0.85, 0.85),
   legend.title = "Platelet count",
   legend.labs = c("<=350", ">350"),
-  xlab = 'Time in months',
-  ylab = 'Progression free survival probability'
+  xlab = 'PFS (months)',
+  ylab = 'Survival probability (PFS)'
 ) ->
   pfs_platelet_plot;pfs_platelet_plot
 ggsave(
@@ -223,8 +223,8 @@ survminer::ggsurvplot(
   legend = c(0.85, 0.85),
   legend.title = "Age",
   legend.labs = c("<=50", ">50"),
-  xlab = 'Time in months',
-  ylab = 'Progression free survival probability'
+  xlab = 'PFS (months)',
+  ylab = 'Survival probability (PFS)'
 ) ->
   pfs_age_plot;pfs_age_plot
 
@@ -242,7 +242,7 @@ ggsave(
 
 metadata_clean_pfs %>%
   dplyr::filter(!is.na(platelet_rate)) %>%
-  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 43, 'PLT_rate>28', 'PLT_rate<=28'))) ->
+  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 26, 'PLT_rate>25', 'PLT_rate<=25'))) ->
   metadata_clean_pfs_platelet_rate
 
 coxph(Surv(time = pfs, event = pfs_status) ~ PLT_rate, data = metadata_clean_pfs_platelet_rate) %>% 
@@ -285,10 +285,10 @@ survminer::ggsurvplot(
   surv.median.line = 'hv',
   
   legend = c(0.85, 0.85),
-  legend.title = "Big platelet rate",
-  legend.labs = c("<=43", ">43"),
-  xlab = 'Time in months',
-  ylab = 'Progression free survival probability'
+  legend.title = "P-LCR",
+  legend.labs = c("<=26", ">26"),
+  xlab = 'PFS (months)',
+  ylab = 'Survival probability (PFS)'
 ) ->
   pfs_platelet_rate_plot;pfs_platelet_rate_plot
 ggsave(
@@ -357,8 +357,8 @@ survminer::ggsurvplot(
   legend = c(0.85, 0.85),
   legend.title = "Platelet count",
   legend.labs = c("<=350", ">350"),
-  xlab = 'Time in months',
-  ylab = 'Overall survival probability',
+  xlab = 'OS (months)',
+  ylab = 'Survival probability (OS)',
 ) ->
   os_platelet_plot;os_platelet_plot
 
@@ -415,8 +415,8 @@ survminer::ggsurvplot(
   legend = c(0.85, 0.85),
   legend.title = "Age",
   legend.labs = c("<=50", ">50"),
-  xlab = 'Time in months',
-  ylab = 'Overall survival probability',
+  xlab = 'OS (months)',
+  ylab = 'Survival probability (OS)',
 ) ->
   os_age_plot;os_age_plot
 
@@ -434,7 +434,7 @@ ggsave(
 
 metadata_clean_os %>%
   dplyr::filter(!is.na(platelet_rate)) %>%
-  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 43, 'PLT_rate>28', 'PLT_rate<=28'))) ->
+  dplyr::mutate(PLT_rate = as.factor(ifelse(platelet_rate > 26, 'PLT_rate>28', 'PLT_rate<=28'))) ->
   metadata_clean_os_platelet_rate
 
 coxph(Surv(time = os, event = os_status) ~ PLT_rate, data = metadata_clean_os_platelet_rate) %>% 
@@ -478,10 +478,10 @@ survminer::ggsurvplot(
   surv.median.line = 'hv',
   
   legend = c(0.85, 0.85),
-  legend.title = "Big platelet rate",
-  legend.labs = c("<=43", ">43"),
-  xlab = 'Time in months',
-  ylab = 'Overall survival probability',
+  legend.title = "P-LCR",
+  legend.labs = c("<=26", ">26"),
+  xlab = 'OS (months)',
+  ylab = 'Survival probability (OS)',
 ) ->
   os_platelet_rate_plot;os_platelet_rate_plot
 ggsave(
