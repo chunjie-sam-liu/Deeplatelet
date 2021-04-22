@@ -44,7 +44,15 @@ fn_cindex_ci <- function(.d) {
   glue::glue("{signif(.lower, 3)}-{signif(.upper, 3)}")
 }
 
-fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probability') {
+fn_surival_plot <- function(.d, .cohort = 'TC', .xlab = 'OS (months)', .ylab = 'Survival probability (OS)') {
+  
+  .cohort.label <- if (.cohort == "EV1") {
+    "VC1"
+  } else if (.cohort == "EV2") {
+    "VC2"
+  } else {
+    .cohort
+  }
   
   .sd <- survdiff(formula = Surv(durations, event) ~ group, data = .d)
   .kmp <- 1 - pchisq(.sd$chisq, df = length(levels(as.factor(.d$group))) - 1)
@@ -93,7 +101,7 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probab
     legend = "top",
     legend.labs = .legend.label$group,
     legend.title = 'Risk',
-    xlab = 'Time in months',
+    xlab = .xlab,
     ylab = .ylab
   ) ->
     .p
@@ -101,12 +109,15 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .ylab = 'Overall survival probab
   .p$plot +
     theme(
       legend.position = c(0.235, 0.09),
-      legend.direction = "horizontal"
+      legend.direction = "horizontal",
+      panel.grid = element_blank(),
     ) +
     annotate(geom = 'text', x = 0, y = 0.2, label = human_read_latex_pval(human_read(.kmp), .s = "Log-rank"), size = 5, hjust = 0, vjust = 0) +
     annotate(geom = 'text', x = 0, y = 0.12, label = .cindex.label, size = 5, hjust = 0, vjust = 0) +
-    annotate(geom = 'text', x = 0, y = 0.29, label = .cohort, size = 5, hjust = 0, vjust = 0) ->
+    annotate(geom = 'text', x = 0, y = 0.29, label = .cohort.label, size = 5, hjust = 0, vjust = 0) ->
     .p$plot
+  .p$table + theme(panel.grid = element_blank()) -> .p$table
+  
   .p
 }
 
@@ -207,11 +218,11 @@ pfs.test2 <- fn_load(.file = 'pfs.test2') %>%
 
 # pfs survival plot -------------------------------------------------------
 
-fn_surival_plot(.d = pfs.merge, 'TC', .ylab = "Progression free survival probability") %>% 
+fn_surival_plot(.d = pfs.merge, 'TC', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>% 
   fn_save_survival_plot(.cohort = 'TC', .type = 'PFS')
-fn_surival_plot(.d = pfs.test1, 'EV1', .ylab = "Progression free survival probability") %>%
+fn_surival_plot(.d = pfs.test1, 'EV1', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
   fn_save_survival_plot(.cohort = 'EV1', .type = 'PFS')
-fn_surival_plot(.d = pfs.test2, 'EV2', .ylab = "Progression free survival probability") %>%
+fn_surival_plot(.d = pfs.test2, 'EV2', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
   fn_save_survival_plot(.cohort = 'EV2', .type = 'PFS')
 
 # AUC ---------------------------------------------------------------------
@@ -236,7 +247,8 @@ os.legend.labels <- c(
   glue::glue("TC   {signif(os.merge.auc$AUC, 3)} ({os.merge.auc$ci})"),
   glue::glue("EV1 {signif(os.test1.auc$AUC, 3)} ({os.test1.auc$ci})"),
   glue::glue("EV2 {signif(os.test2.auc$AUC, 3)} ({os.test2.auc$ci})")
-  )
+  ) %>% 
+  gsub(pattern = "EV", replacement = "VC", x = .)
 
 dplyr::bind_rows(
   os.merge.auc$tb,
@@ -250,7 +262,7 @@ dplyr::bind_rows(
   scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1), expand = c(0, 0)) +
   scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1.004), expand = c(0, 0)) +
   scale_color_manual(
-    name = 'AUC, 5 years',
+    name = 'AUC, 5-year OS',
     labels = os.legend.labels,
     # values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
     values = c("#006400", "#B22222", "#00008B")
@@ -319,7 +331,8 @@ pfs.legend.labels <- c(
   glue::glue("TC   {signif(pfs.merge.auc$AUC, 3)} ({pfs.merge.auc$ci})"),
   glue::glue("EV1 {signif(pfs.test1.auc$AUC, 3)} ({pfs.test1.auc$ci})"),
   glue::glue("EV2 {signif(pfs.test2.auc$AUC, 3)} ({pfs.test2.auc$ci})")
-)
+) %>% 
+  gsub(pattern = "EV", replacement = "VC", x = .)
 
 
 dplyr::bind_rows(
@@ -334,7 +347,7 @@ dplyr::bind_rows(
   scale_x_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(-0.003, 1), expand = c(0, 0)) +
   scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits = c(0, 1.004), expand = c(0, 0)) +
   scale_color_manual(
-    name = 'AUC, 3 years',
+    name = 'AUC, 3-year PFS',
     labels = pfs.legend.labels,
     # values = RColorBrewer::brewer.pal(n=3, name = 'Set1')[c(2, 1, 3)]
     values = c("#006400", "#B22222", "#00008B")
