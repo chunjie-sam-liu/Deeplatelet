@@ -176,6 +176,8 @@ fn_auc_ci <- function(.d, .type = .type) {
 
 
 # Load os data ---------------------------------------------------------------
+total416.os.se <- readr::read_rds(file = 'data/rda/total416.os.se.norm.rds.gz')
+total434.pfs.se <- readr::read_rds(file = 'data/rda/total434.pfs.se.norm.rds.gz')
 
 os.train <- fn_load(.file = "os.train")
 os.val <- fn_load(.file = 'os.val')
@@ -189,6 +191,27 @@ os.test1 <- fn_load(.file = 'os.test1') %>%
 
 os.test2 <- fn_load(.file = 'os.test2') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(os.merge$riskscore), 'High', 'Low'))
+
+total416.os.se@colData %>% 
+  as.data.frame() ->
+  os_meta
+
+dplyr::bind_rows(
+  os_meta %>% dplyr::filter(oc == "OC521"),
+  os_meta %>% dplyr::filter(oc == "OC44"),
+  os_meta %>% dplyr::filter(oc == "OC79"),
+  os_meta %>% dplyr::filter(oc == "OC172")
+) %>% 
+  dplyr::bind_cols(
+    dplyr::bind_rows(
+      os.merge,
+      os.test1,
+      os.test2
+    ) %>% 
+      dplyr::select(-durations, -event)
+  ) %>% 
+  writexl::write_xlsx(path = "data/newoutput/Riskgroup-os.xlsx")
+
 
 
 # OS survival plot --------------------------------------------------------
@@ -214,6 +237,28 @@ pfs.test1 <- fn_load(.file = 'pfs.test1') %>%
 
 pfs.test2 <- fn_load(.file = 'pfs.test2') %>% 
   dplyr::mutate(group = ifelse(riskscore > median(pfs.merge$riskscore), 'High', 'Low'))
+
+
+total434.pfs.se@colData %>% 
+  as.data.frame() ->
+  pfs_meta
+
+dplyr::bind_rows(
+  pfs_meta %>% dplyr::filter(oc == "OC521"),
+  pfs_meta %>% dplyr::filter(oc == "OC44"),
+  pfs_meta %>% dplyr::filter(oc == "OC79"),
+  pfs_meta %>% dplyr::filter(oc == "OC172")
+) %>% 
+  dplyr::bind_cols(
+    dplyr::bind_rows(
+      pfs.merge,
+      pfs.test1,
+      pfs.test2
+    ) %>% 
+      dplyr::select(-durations, -event)
+  ) %>% 
+  writexl::write_xlsx(path = "data/newoutput/Riskgroup-pfs.xlsx")
+
 
 
 # pfs survival plot -------------------------------------------------------
