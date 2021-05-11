@@ -125,3 +125,8 @@ ddd %>%
   dplyr::select(-data) %>% 
   tidyr::unnest(cols = iqr) %>% 
   tidyr::spread(key = group, value = iqr)
+
+
+# Save image --------------------------------------------------------------
+
+save.image(file = "data/rda/data-merge.rda")
