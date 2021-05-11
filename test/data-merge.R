@@ -41,7 +41,10 @@ dd %>%
     oc %in% c("OC521", "OC44") ~ "TC",
     oc == "OC79" ~ "VC1",
     oc == "OC172" ~ "VC2"
-  )) %>% 
+  )) ->
+  ddd
+
+ddd %>% 
   dplyr::group_by(group) %>% 
   tidyr::nest() %>% 
   dplyr::mutate(iqr = purrr::map(.x = data, .f = function(.x) {
@@ -55,6 +58,67 @@ dd %>%
     tibble::tibble(
       name = c('Age', '<=45', '>45'),
       iqr = c(.all, .less45, .greater45)
+    )
+  })) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = iqr) %>% 
+  tidyr::spread(key = group, value = iqr)
+
+ddd %>% 
+  dplyr::group_by(group) %>% 
+  tidyr::nest() %>% 
+  dplyr::mutate(iqr = purrr::map(.x = data, .f = function(.x) {
+    .q <- .x$platelet_count %>% 
+      as.numeric() %>% 
+      na.omit() %>% 
+      as.numeric() %>% 
+      quantile()
+    .all <- glue::glue('{.q[3]} ({.q[2]}-{.q[4]})')
+    tibble::tibble(
+      name = "Platelet Count",
+      iqr = .all
+    )
+  })) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = iqr) %>% 
+  tidyr::spread(key = group, value = iqr)
+
+
+ddd %>% 
+  dplyr::group_by(group) %>% 
+  tidyr::nest() %>% 
+  dplyr::mutate(iqr = purrr::map(.x = data, .f = function(.x) {
+    .q <- .x$os_duration %>% 
+      as.numeric() %>% 
+      na.omit() %>% 
+      as.numeric() %>% 
+      quantile()
+    .all <- glue::glue('{.q[3]} ({.q[2]}-{.q[4]})')
+    tibble::tibble(
+      name = "OS",
+      iqr = .all
+    )
+  })) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = iqr) %>% 
+  tidyr::spread(key = group, value = iqr)
+
+ddd %>% 
+  dplyr::group_by(group) %>% 
+  tidyr::nest() %>% 
+  dplyr::mutate(iqr = purrr::map(.x = data, .f = function(.x) {
+    .q <- .x$pfs_duration %>% 
+      as.numeric() %>% 
+      na.omit() %>% 
+      as.numeric() %>% 
+      quantile()
+    .all <- glue::glue('{.q[3]} ({.q[2]}-{.q[4]})')
+    tibble::tibble(
+      name = "OS",
+      iqr = .all
     )
   })) %>% 
   dplyr::ungroup() %>% 
