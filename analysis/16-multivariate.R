@@ -57,6 +57,43 @@ fn_plot_risk_distribution <- function(.d) {
     )
 }
 
+human_read <- function(.x){
+  .sign = ifelse(.x < 0 , TRUE, FALSE)
+  .x <- abs(.x)
+  
+  if (.x >= 0.1) {
+    .x %>% signif(digits = 2) %>% toString() -> .xx
+  } else if (.x < 0.1 && .x >= 0.001 ) {
+    .x %>% signif(digits = 2) %>% toString() -> .xx
+  } else if (.x < 0.001 && .x > 0) {
+    .x %>% format(digits = 3, scientific = TRUE) -> .xx
+  } else {
+    .xx <- '0'
+  }
+  
+  ifelse(.sign, paste0('-',.xx), .xx)
+}
+
+human_read_latex_pval <- function(.x, .s = NA) {
+  
+  if (is.na(.s)) {
+    if (grepl(pattern = "e", x = .x)) {
+      sub("-0", "-", strsplit(split = "e", x = .x, fixed = TRUE)[[1]]) -> .xx
+      latex2exp::TeX(glue::glue("<<.xx[1]>> \\times 10^{<<.xx[2]>>}$", .open = "<<", .close = ">>"))
+    } else {
+      latex2exp::TeX(glue::glue("<<.x>>$", .open = "<<", .close = ">>"))
+    }
+  } else {
+    if (grepl(pattern = "e", x = .x)) {
+      sub("-0", "-", strsplit(split = "e", x = .x, fixed = TRUE)[[1]]) -> .xx
+      latex2exp::TeX(glue::glue("<<.s>>, <<.xx[1]>> \\times 10^{<<.xx[2]>>}$", .open = "<<", .close = ">>"))
+    } else {
+      latex2exp::TeX(glue::glue("<<.s>>, <<.x>>$", .open = "<<", .close = ">>"))
+    }
+  }
+  
+}
+
 # Multi-Cox ---------------------------------------------------------------
 
 # OS ----------------------------------------------------------------------
@@ -119,8 +156,38 @@ coxph(formula = Surv(duration, event) ~
 writexl::write_xlsx(os_multicox_reg, path = "data/newoutput/OS-multicox-reg.xlsx")
 
 os_multicox_reg %>% 
+  dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
+  dplyr::mutate(pval_label = signif(pval, 2)) %>% 
   ggplot(aes(x = hazard_ratio, y = formalname)) +
-  geom_point()
+  geom_point(size = 3, color = "red", fill = "red", shape = 23) +
+  geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.5) +
+  geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 1) +
+  geom_text(aes(x = -8, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
+  geom_text(aes(x = 28, y = formalname, label = pval_label), size = 6, hjust = 1) +
+  scale_y_discrete(expand = c(0.2, 0)) +
+  scale_x_continuous(expand = c(0.18, 0, 0.05, 0)) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(size = 14, colour = "black"),
+    axis.text.y = element_text(size = 16),
+    axis.title.x = element_text(size = 20)
+  ) +
+  labs(x = "Hazard ratio") +
+  annotate(geom = "text", x = -8, y = 7, label = "HR (95% CI)", size = 6, vjust = 1) +
+  annotate(geom = "text", x = 28, y = 7, label = "P value", size = 6, vjust = 1, hjust = 1) ->
+  os_hr_mcox_plot;os_hr_mcox_plot
+ggsave(
+  filename = "OS-HR-MCox.pdf",
+  plot = os_hr_mcox_plot,
+  device = "pdf",
+  path = "data/newoutput",
+  width = 10,
+  height = 4
+)
 
 
 # PFS ---------------------------------------------------------------------
@@ -185,3 +252,36 @@ coxph(formula = Surv(duration, event) ~
 
 writexl::write_xlsx(pfs_multicox_reg, path = "data/newoutput/PFS-multicox-reg.xlsx")
 
+pfs_multicox_reg %>% 
+  dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
+  dplyr::mutate(pval_label = signif(pval, 2)) %>% 
+  ggplot(aes(x = hazard_ratio, y = formalname)) +
+  geom_point(size = 3, color = "red", fill = "red", shape = 23) +
+  geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.5) +
+  geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 1) +
+  geom_text(aes(x = -8, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
+  geom_text(aes(x = 35, y = formalname, label = pval_label), size = 6, hjust = 1) +
+  scale_y_discrete(expand = c(0.2, 0)) +
+  scale_x_continuous(expand = c(0.18, 0, 0.05, 0)) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    axis.line.x = element_line(colour = "black"),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(size = 14, colour = "black"),
+    axis.text.y = element_text(size = 16),
+    axis.title.x = element_text(size = 20)
+  ) +
+  labs(x = "Hazard ratio") +
+  annotate(geom = "text", x = -8, y = 7, label = "HR (95% CI)", size = 6, vjust = 1) +
+  annotate(geom = "text", x = 35, y = 7, label = "P value", size = 6, vjust = 1, hjust = 1) ->
+  pfs_hr_mcox_plot;pfs_hr_mcox_plot
+ggsave(
+  filename = "PFS-HR-MCox.pdf",
+  plot = pfs_hr_mcox_plot,
+  device = "pdf",
+  path = "data/newoutput",
+  width = 10,
+  height = 4
+)
