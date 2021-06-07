@@ -383,6 +383,16 @@ coxph(Surv(time = os, event = os_status) ~ age_group, data = metadata_clean_os_p
     pval = p.value
   )
 
+coxph(Surv(time = os, event = os_status) ~ age_group, data = metadata_clean_os_platelet) %>% 
+  summary() -> 
+  .coxph
+
+.coxph$conf.int %>% 
+  as.data.frame() %>% 
+  tibble::as_tibble() %>% 
+  dplyr::select(hazard_ratio = 1, ci_lower95 = 3, ci_upper95 = 4) %>% 
+  dplyr::mutate(coxp = .coxph$waldtest[3])
+
 survminer::ggsurvplot(
   fit = survfit(Surv(time = os, event = os_status) ~ age_group, data = metadata_clean_os_platelet),
   data = metadata_clean_os_platelet,
