@@ -144,42 +144,7 @@ fn_ifs <- function(.x, .feats, .tose) {
     oc44_error = list(rownames(oc44.auc$predict)[oc44.auc$predict$correct == FALSE])
   )
 }
-# fn_roc_95ci <- function(.p) {
-#   # acc - Accuracy
-#   # tpr - True positive rate (Sensitivity, Recall)
-#   # tnr - True negative rate (Specificity)
-#   # ppv - Positive predictive value (Precision)
-#   # npv - Negative predictive value
-#   # kappa - Cohen's kappa
-#   # f1 - F1 measure
-#   # mlr::performance(pred = .pred$panel, measures = list(mlr::acc, mlr::tpr, mlr::tnr, mlr::ppv, mlr::npv, mlr::kappa, mlr::f1))
-#   .rocm <- mlr::calculateROCMeasures(.p)
-#   .kappa_f1 <- mlr::performance(pred = .p, measures = list(mlr::kappa, mlr::f1))
-#   .rocm_epi <- epiR::epi.tests(dat = t(.rocm$confusion.matrix))
-#   .pred_metrics <- tibble::tibble(
-#     acc = list(unlist(.rocm_epi$rval$diag.acc)),
-#     tpr = list(unlist(.rocm_epi$rval$se)),
-#     tnr = list(unlist(.rocm_epi$rval$sp)),
-#     ppv = list(unlist(.rocm_epi$rval$ppv)),
-#     npv = list(unlist(.rocm_epi$rval$npv)),
-#     kappa = .kappa_f1['kappa'],
-#     f1 = .kappa_f1['f1']
-#   )
-#   .table_metrics <- .pred_metrics %>%
-#     dplyr::mutate_if(
-#       .predicate = rlang::is_list,
-#       .funs = ~purrr::map(.x = ., .f = function(.x) {glue::glue('{sprintf("%.3f", .x[1])} ({sprintf("%.3f", .x[2])} - {sprintf("%.3f", .x[3])})')})) %>%
-#     dplyr::mutate_if(
-#       .predicate = rlang::is_double,
-#       .funs = ~purrr::map(.x = ., .f = function(.x) {sprintf("%.3f", .x)})
-#     ) %>%
-#     dplyr::mutate_if(
-#       .predicate = rlang::is_list,
-#       .funs = unlist
-#     )
-#   colnames(.table_metrics) <- c('Accuracy (95% CI)', 'SN (95% CI)', 'SP (95% CI)', 'PPV (95% CI)', 'NPV (95% CI)', 'Kappa', 'F1')
-#   .table_metrics
-# }
+
 
 fn_dge <- function(.se) {
   # transform se to dds
