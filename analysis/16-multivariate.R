@@ -174,9 +174,10 @@ os_multicox_reg %>%
     axis.title.y = element_blank(),
     axis.text = element_text(size = 14, colour = "black"),
     axis.text.y = element_text(size = 16),
-    axis.title.x = element_text(size = 20)
+    axis.title.x = element_text(size = 20),
+    plot.title = element_text(size = 20, hjust = 0.3)
   ) +
-  labs(x = "Hazard ratio") +
+  labs(x = "Hazard ratio", title = "OS HR") +
   annotate(geom = "text", x = -8, y = 7, label = "HR (95% CI)", size = 6, vjust = 1) +
   annotate(geom = "text", x = 28, y = 7, label = "P value", size = 6, vjust = 1, hjust = 1) ->
   os_hr_mcox_plot;os_hr_mcox_plot
@@ -271,9 +272,10 @@ pfs_multicox_reg %>%
     axis.title.y = element_blank(),
     axis.text = element_text(size = 14, colour = "black"),
     axis.text.y = element_text(size = 16),
-    axis.title.x = element_text(size = 20)
+    axis.title.x = element_text(size = 20),
+    plot.title = element_text(size = 20, hjust = 0.3)
   ) +
-  labs(x = "Hazard ratio") +
+  labs(x = "Hazard ratio", title = "PFS HR") +
   annotate(geom = "text", x = -8, y = 7, label = "HR (95% CI)", size = 6, vjust = 1) +
   annotate(geom = "text", x = 35, y = 7, label = "P value", size = 6, vjust = 1, hjust = 1) ->
   pfs_hr_mcox_plot;pfs_hr_mcox_plot
