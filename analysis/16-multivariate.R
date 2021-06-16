@@ -138,7 +138,9 @@ fn_unicox <- function(.group, .data) {
 # OS ----------------------------------------------------------------------
 
 os_risk_group %>% 
-  dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) ->
+  dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) %>% 
+  dplyr::mutate(platelet_count = as.numeric(platelet_count)) %>% 
+  dplyr::mutate(duration = ifelse(duration > 100, 100, duration)) ->
   os_risk_group_s
 
 os_risk_group_s %>% 
@@ -156,7 +158,7 @@ ggsave(
 )
 
 os_risk_group_s %>%
-  tidyr::drop_na() %>% 
+  # tidyr::drop_na() %>% 
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
   dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
@@ -267,7 +269,9 @@ ggsave(
 # PFS ---------------------------------------------------------------------
 
 pfs_risk_group %>% 
-  dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) ->
+  dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) %>% 
+  dplyr::mutate(platelet_count = as.numeric(platelet_count)) %>% 
+  dplyr::mutate(duration = ifelse(duration > 60, 60, duration)) ->
   pfs_risk_group_s
 
 
@@ -287,11 +291,10 @@ ggsave(
 
 
 pfs_risk_group_s %>% 
-  tidyr::drop_na() %>% 
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
   dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
-  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 300, "plc>350", "plc<=350"), levels = c("plc<=350", "plc>350"))) %>% 
+  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 350, "plc>350", "plc<=350"), levels = c("plc<=350", "plc>350"))) %>% 
   dplyr::mutate(platinum_group = factor(platinum, levels = c("sensitive", "resistant"), ordered = FALSE)) %>% 
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
