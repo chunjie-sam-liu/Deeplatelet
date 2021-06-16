@@ -124,6 +124,10 @@ metadata_clean_pfs %>%
   dplyr::mutate(age_group = as.factor(ifelse(age > 50, '>50', '<=50'))) ->
   metadata_clean_pfs_platelet
 
+metadata_clean_pfs_platelet %>% 
+  ggpubr::ggboxplot(x = "PLT", y = "pfs") +
+  ggpubr::stat_compare_means()
+
 coxph(Surv(time = pfs, event = pfs_status) ~ PLT, data = metadata_clean_pfs_platelet) %>% 
   broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
   dplyr::select(
@@ -170,6 +174,7 @@ survminer::ggsurvplot(
   ylab = 'Survival probability (PFS)'
 ) ->
   pfs_platelet_plot;pfs_platelet_plot
+
 ggsave(
   filename ='PFS-platelet-count.pdf',
   plot = print(pfs_platelet_plot, newpage = FALSE),
