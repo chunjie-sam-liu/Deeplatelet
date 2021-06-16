@@ -156,7 +156,7 @@ ggsave(
 )
 
 os_risk_group_s %>%
-  tidyr::drop
+  tidyr::drop_na() %>% 
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
   dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
@@ -264,10 +264,6 @@ ggsave(
 )
 
 
-
-
-
-
 # PFS ---------------------------------------------------------------------
 
 pfs_risk_group %>% 
@@ -291,6 +287,7 @@ ggsave(
 
 
 pfs_risk_group_s %>% 
+  tidyr::drop_na() %>% 
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
   dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
@@ -299,6 +296,39 @@ pfs_risk_group_s %>%
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   pfs_risk_group_s_s
+
+
+
+# Unicox ------------------------------------------------------------------
+
+
+unicox_df %>% 
+  dplyr::mutate(unicox = purrr::map(.x = group, .f = fn_unicox, .data = pfs_risk_group_s_s)) %>% 
+  tidyr::unnest(cols = c(unicox)) %>% 
+  dplyr::select(term = group, hazard_ratio, ci.low, ci.high, pval, formalname) %>% 
+  dplyr::arrange(-hazard_ratio) %>% 
+  dplyr::mutate(formalname = factor(formalname, levels = formalname)) ->
+  pfs_unicox_reg;pfs_unicox_reg
+
+pfs_unicox_reg %>% 
+  dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
+  dplyr::mutate(pval_label = signif(pval, 2)) %>% 
+  fn_plot_hr() +
+  labs(title = "OS UniCox HR") ->
+  pfs_hr_ucox_plot;pfs_hr_ucox_plot
+
+ggsave(
+  filename = "PFS-HR-UCox.pdf",
+  plot = pfs_hr_ucox_plot,
+  device = "pdf",
+  path = "data/newoutput",
+  width = 10,
+  height = 4
+)
+
+# Multicox ----------------------------------------------------------------
+
+
 
 coxph(formula = Surv(duration, event) ~ 
         riskscore_group + 
@@ -311,7 +341,6 @@ coxph(formula = Surv(duration, event) ~
       data = pfs_risk_group_s_s) ->
   pfs.coxph
 
-step(pfs.coxph)
 
 pfs.coxph %>% 
   broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
@@ -354,33 +383,6 @@ ggsave(
 )
 
 
-
-# Unicox ------------------------------------------------------------------
-
-
-unicox_df %>% 
-  dplyr::mutate(unicox = purrr::map(.x = group, .f = fn_unicox, .data = os_risk_group_s_s)) %>% 
-  tidyr::unnest(cols = c(unicox)) %>% 
-  dplyr::select(term = group, hazard_ratio, ci.low, ci.high, pval, formalname) %>% 
-  dplyr::arrange(-hazard_ratio) %>% 
-  dplyr::mutate(formalname = factor(formalname, levels = formalname)) ->
-  os_unicox_reg;os_unicox_reg
-
-os_unicox_reg %>% 
-  dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
-  dplyr::mutate(pval_label = signif(pval, 2)) %>% 
-  fn_plot_hr() +
-  labs(title = "OS UniCox HR") ->
-  os_hr_ucox_plot;os_hr_ucox_plot
-
-ggsave(
-  filename = "OS-HR-UCox.pdf",
-  plot = os_hr_ucox_plot,
-  device = "pdf",
-  path = "data/newoutput",
-  width = 10,
-  height = 4
-)
 
 # Save image --------------------------------------------------------------
 
