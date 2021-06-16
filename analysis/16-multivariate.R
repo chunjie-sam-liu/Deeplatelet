@@ -206,7 +206,7 @@ ggsave(
   plot = os_hr_ucox_plot,
   device = "pdf",
   path = "data/newoutput",
-  width = 10,
+  width = 12,
   height = 5
 )
 
@@ -259,7 +259,7 @@ ggsave(
   plot = os_hr_mcox_plot,
   device = "pdf",
   path = "data/newoutput",
-  width = 10,
+  width = 12,
   height = 5
 )
 
@@ -314,7 +314,7 @@ pfs_unicox_reg %>%
   dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
   dplyr::mutate(pval_label = signif(pval, 2)) %>% 
   fn_plot_hr() +
-  labs(title = "OS UniCox HR") ->
+  labs(title = "PFS UniCox HR") ->
   pfs_hr_ucox_plot;pfs_hr_ucox_plot
 
 ggsave(
@@ -322,7 +322,7 @@ ggsave(
   plot = pfs_hr_ucox_plot,
   device = "pdf",
   path = "data/newoutput",
-  width = 10,
+  width = 12,
   height = 5
 )
 
@@ -378,7 +378,7 @@ ggsave(
   plot = pfs_hr_mcox_plot,
   device = "pdf",
   path = "data/newoutput",
-  width = 10,
+  width = 12,
   height = 5
 )
 
