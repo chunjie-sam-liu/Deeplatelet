@@ -207,7 +207,7 @@ ggsave(
   device = "pdf",
   path = "data/newoutput",
   width = 10,
-  height = 4
+  height = 5
 )
 
 # Multicox ----------------------------------------------------------------
@@ -260,7 +260,7 @@ ggsave(
   device = "pdf",
   path = "data/newoutput",
   width = 10,
-  height = 4
+  height = 5
 )
 
 
@@ -323,7 +323,7 @@ ggsave(
   device = "pdf",
   path = "data/newoutput",
   width = 10,
-  height = 4
+  height = 5
 )
 
 # Multicox ----------------------------------------------------------------
@@ -370,7 +370,7 @@ pfs_multicox_reg %>%
   dplyr::mutate(hr_label = glue::glue("{round(hazard_ratio, 2)}({round(ci.low, 2)}-{round(ci.high, 2)})")) %>% 
   dplyr::mutate(pval_label = signif(pval, 2)) %>% 
   fn_plot_hr() +
-  labs(title = "PFS HR") ->
+  labs(title = "PFS MultiCox HR") ->
   pfs_hr_mcox_plot;pfs_hr_mcox_plot
 
 ggsave(
@@ -379,7 +379,7 @@ ggsave(
   device = "pdf",
   path = "data/newoutput",
   width = 10,
-  height = 4
+  height = 5
 )
 
 
