@@ -10,7 +10,7 @@ library(survival)
 
 residual <- readxl::read_excel(path = "data/metadata/Residual.xlsx") %>% 
   dplyr::filter(Residual != "NA") %>% 
-  dplyr::mutate(residual = ifelse(Residual == "R0", "R0", "non-R0")) %>% 
+  dplyr::mutate(residual = ifelse(Residual %in% c("R0", "R1"), "R0", "non-R0")) %>% 
   dplyr::select(barcode, residual)
 
 platinum.se <- readr::read_rds(file = "data/rda/total351.platinum.se.rds.gz")
@@ -121,7 +121,6 @@ fn_plot_hr <- function(.d) {
 }
 
 fn_unicox <- function(.group, .data) {
-  
   coxph(formula = Surv(duration, event) ~ rlang::eval_bare(rlang::sym(.group)), data = .data) %>% 
     broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
     dplyr::select(
@@ -146,7 +145,7 @@ os_risk_group %>%
 os_risk_group_s %>% 
   fn_plot_risk_distribution() +
   labs(title = "OS risk score distribution") ->
-  os_risk_group_s_riskscore_dis_plot
+  os_risk_group_s_riskscore_dis_plot;os_risk_group_s_riskscore_dis_plot
 
 ggsave(
   filename = "OS-riskscore-distribution.pdf",
@@ -158,7 +157,7 @@ ggsave(
 )
 
 os_risk_group_s %>%
-  # tidyr::drop_na() %>% 
+  # tidyr::drop_na() %>%
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
   dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
@@ -167,6 +166,8 @@ os_risk_group_s %>%
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   os_risk_group_s_s
+
+
 
 # Unicox ------------------------------------------------------------------
 unicox_df <- 
