@@ -132,9 +132,71 @@ fn_unicox <- function(.group, .data) {
     )
 }
 
-# Multi-Cox ---------------------------------------------------------------
+fn_test_age <- function(.d) {
+  tibble::tibble(aco = seq(30, 70, 5)) %>% 
+    dplyr::mutate(cx = purrr::map(.x = aco, .f = function(.x) {
+      .d %>% 
+        dplyr::mutate(age_group = factor(ifelse(age > .x, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) ->
+        .dd
+      .dd %>% 
+        dplyr::group_by(age_group) %>% 
+        dplyr::count() %>% 
+        dplyr::ungroup() %>% 
+        tidyr::spread(key = age_group, value = n) ->
+        .ddd
+      
+      coxph(formula = Surv(duration, event) ~ age_group, data = .dd) %>%
+        broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
+        dplyr::select(
+          term,
+          hazard_ratio = estimate,
+          ci.low = conf.low,
+          ci.high = conf.high,
+          pval = p.value
+        ) %>% 
+        dplyr::bind_cols(.ddd)
+    })) %>% 
+    tidyr::unnest(cols = cx) %>% 
+    dplyr::arrange(pval) %>% 
+    dplyr::select(-term) %>% 
+    dplyr::rename(age_cutoff = aco)
+}
+
+fn_test_plc <- function(.d) {
+  tibble::tibble(plc = seq(200, 700, 50)) %>% 
+    dplyr::mutate(cx = purrr::map(.x = plc, .f = function(.x) {
+      .d %>% 
+        dplyr::mutate(plc_group = factor(ifelse(platelet_count > .x, "plc>350", "plc<=350"), levels = c("plc<=350", "plc>350"))) ->
+        .dd
+      
+      .dd %>% 
+        dplyr::group_by(plc_group) %>% 
+        dplyr::count() %>% 
+        dplyr::ungroup() %>% 
+        tidyr::spread(key = plc_group, value = n) ->
+        .ddd
+      
+      coxph(formula = Surv(duration, event) ~ plc_group, data = .dd) %>%
+        broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
+        dplyr::select(
+          term,
+          hazard_ratio = estimate,
+          ci.low = conf.low,
+          ci.high = conf.high,
+          pval = p.value
+        ) %>% 
+        dplyr::bind_cols(.ddd)
+    })) %>% 
+    tidyr::unnest(cols = cx) %>% 
+    dplyr::arrange(pval) %>% 
+    dplyr::select(-term) %>% 
+    dplyr::rename(plc_cutoff = plc)
+}
 
 # OS ----------------------------------------------------------------------
+
+
+# OS risk score distribution ----------------------------------------------
 
 os_risk_group %>% 
   dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) %>% 
@@ -156,27 +218,21 @@ ggsave(
   height = 3.5
 )
 
+# Multi-Cox ---------------------------------------------------------------
+
 os_risk_group_s %>%
   # tidyr::drop_na() %>%
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
-  dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
-  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 350, "plc>350", "plc<=350"), levels = c("plc<=350", "plc>350"))) %>% 
+  dplyr::mutate(age_group = factor(ifelse(age > 65, "age>65", "age<=65"), levels = c("age<=65", "age>65"))) %>% 
+  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 500, "plc>500", "plc<=500"), levels = c("plc<=500", "plc>500"))) %>% 
   dplyr::mutate(platinum_group = factor(platinum, levels = c("sensitive", "resistant"), ordered = FALSE)) %>% 
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   os_risk_group_s_s
 
-coxph(formula = Surv(duration, event) ~ age_group, data = os_risk_group_s_s) %>% 
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
-  dplyr::select(
-    term,
-    hazard_ratio = estimate,
-    ci.low = conf.low,
-    ci.high = conf.high,
-    pval = p.value
-  )
-
+fn_test_age(os_risk_group_s_s)
+fn_test_plc(os_risk_group_s_s)
 
 # Unicox ------------------------------------------------------------------
 unicox_df <- 
