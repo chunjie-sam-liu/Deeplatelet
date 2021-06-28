@@ -167,6 +167,15 @@ os_risk_group_s %>%
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   os_risk_group_s_s
 
+coxph(formula = Surv(duration, event) ~ age_group, data = os_risk_group_s_s) %>% 
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
+  dplyr::select(
+    term,
+    hazard_ratio = estimate,
+    ci.low = conf.low,
+    ci.high = conf.high,
+    pval = p.value
+  )
 
 
 # Unicox ------------------------------------------------------------------
