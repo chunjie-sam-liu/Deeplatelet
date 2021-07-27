@@ -97,10 +97,10 @@ fn_plot_hr <- function(.d) {
     geom_point(size = 3, color = "red", fill = "red", shape = 23) +
     geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.5) +
     geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 1) +
-    geom_text(aes(x = -8, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
-    geom_text(aes(x = max(ci.high) + 4, y = formalname, label = pval_label), size = 6, hjust = 1) +
+    geom_text(aes(x = -4, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
+    geom_text(aes(x = max(ci.high) + 5, y = formalname, label = pval_label), size = 6, hjust = 1) +
     scale_y_discrete(expand = c(0.1, 0)) +
-    scale_x_continuous(expand = c(0.18, 0, 0.05, 0)) +
+    scale_x_continuous(expand = c(0.18, 0, 0.1, 0)) +
     theme(
       panel.grid = element_blank(),
       panel.background = element_blank(),
@@ -113,7 +113,7 @@ fn_plot_hr <- function(.d) {
       plot.title = element_text(size = 20, hjust = 0.3)
     ) +
     labs(x = "Hazard ratio") +
-    annotate(geom = "text", x = -8, y = nrow(.d) + 1, label = "HR (95% CI)", size = 6, vjust = 1) +
+    annotate(geom = "text", x = -4, y = nrow(.d) + 1, label = "HR (95% CI)", size = 6, vjust = 1) +
     annotate(geom = "text", x = max(.d$ci.high) + 4, y = nrow(.d) + 1, label = "P value", size = 6, vjust = 1, hjust = 1)
 }
 
@@ -242,7 +242,7 @@ unicox_df <-
     "residual_group"
   ), formalname = c(
     "Risk score (high vs low)",
-    "CA125 (>35 vs <=35)",
+    # "CA125 (>35 vs <=35)",
     "Age (>50 vs <=50)",
     "PLC (>350 vs <= 350)",
     "Stage (late vs early)",
