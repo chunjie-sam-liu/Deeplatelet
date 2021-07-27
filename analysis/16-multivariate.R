@@ -8,10 +8,7 @@ library(survival)
 
 # Load residual -----------------------------------------------------------
 
-residual <- readxl::read_excel(path = "data/metadata/Residual.xlsx") %>% 
-  dplyr::filter(Residual != "NA") %>% 
-  dplyr::mutate(residual = ifelse(Residual %in% c("R0", "R1"), "R0", "non-R0")) %>% 
-  dplyr::select(barcode, residual)
+residual <- readxl::read_excel(path = "data/metadata/residual.xlsx") 
 
 platinum.se <- readr::read_rds(file = "data/rda/total351.platinum.se.rds.gz")
 platinum.se@colData %>% 
@@ -96,13 +93,13 @@ human_read_latex_pval <- function(.x, .s = NA) {
 
 fn_plot_hr <- function(.d) {
   .d %>% 
-  ggplot(aes(x = hazard_ratio, y = formalname)) +
+    ggplot(aes(x = hazard_ratio, y = formalname)) +
     geom_point(size = 3, color = "red", fill = "red", shape = 23) +
     geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.5) +
     geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 1) +
     geom_text(aes(x = -8, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
-    geom_text(aes(x = 35, y = formalname, label = pval_label), size = 6, hjust = 1) +
-    scale_y_discrete(expand = c(0.2, 0)) +
+    geom_text(aes(x = max(ci.high) + 4, y = formalname, label = pval_label), size = 6, hjust = 1) +
+    scale_y_discrete(expand = c(0.1, 0)) +
     scale_x_continuous(expand = c(0.18, 0, 0.05, 0)) +
     theme(
       panel.grid = element_blank(),
@@ -116,8 +113,8 @@ fn_plot_hr <- function(.d) {
       plot.title = element_text(size = 20, hjust = 0.3)
     ) +
     labs(x = "Hazard ratio") +
-    annotate(geom = "text", x = -8, y = 8, label = "HR (95% CI)", size = 6, vjust = 1) +
-    annotate(geom = "text", x = 35, y = 8, label = "P value", size = 6, vjust = 1, hjust = 1)
+    annotate(geom = "text", x = -8, y = nrow(.d) + 1, label = "HR (95% CI)", size = 6, vjust = 1) +
+    annotate(geom = "text", x = max(.d$ci.high) + 4, y = nrow(.d) + 1, label = "P value", size = 6, vjust = 1, hjust = 1)
 }
 
 fn_unicox <- function(.group, .data) {
@@ -224,8 +221,8 @@ os_risk_group_s %>%
   # tidyr::drop_na() %>%
   dplyr::mutate(stage_group = factor(stage, levels = c("E", "L"))) %>% 
   dplyr::mutate(ca125_group = factor(ifelse(CA125 > 35, "CA125>35", "CA125<=35"), levels = c("CA125<=35", "CA125>35"))) %>% 
-  dplyr::mutate(age_group = factor(ifelse(age > 65, "age>65", "age<=65"), levels = c("age<=65", "age>65"))) %>% 
-  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 500, "plc>500", "plc<=500"), levels = c("plc<=500", "plc>500"))) %>% 
+  dplyr::mutate(age_group = factor(ifelse(age > 50, "age>50", "age<=50"), levels = c("age<=50", "age>50"))) %>% 
+  dplyr::mutate(plc_group = factor(ifelse(platelet_count > 350, "plc>350", "plc<=350"), levels = c("plc<=350", "plc>350"))) %>% 
   dplyr::mutate(platinum_group = factor(platinum, levels = c("sensitive", "resistant"), ordered = FALSE)) %>% 
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
@@ -242,16 +239,14 @@ unicox_df <-
     "age_group",
     "plc_group",
     "stage_group",
-    "residual_group",
-    "platinum_group"
+    "residual_group"
   ), formalname = c(
     "Risk score (high vs low)",
     "CA125 (>35 vs <=35)",
     "Age (>50 vs <=50)",
     "PLC (>350 vs <= 350)",
     "Stage (late vs early)",
-    "Debulking (suboptimal vs optimal)",
-    "Platinum (resitant vs senstive)"
+    "Debulking (suboptimal vs optimal)"
   ))
 
 unicox_df %>% 
@@ -281,13 +276,12 @@ ggsave(
 # Multicox ----------------------------------------------------------------
 
 coxph(formula = Surv(duration, event) ~ 
-        riskscore_group + 
+        riskscore_group +
         ca125_group +
         age_group + 
         plc_group + 
         stage_group +
-        residual_group +
-        platinum_group, 
+        residual_group,
       data = os_risk_group_s_s) ->
   os.coxph
 
@@ -306,8 +300,7 @@ os.coxph %>%
     "Age (>50 vs <=50)",
     "PLC (>350 vs <= 350)",
     "Stage (late vs early)",
-    "Debulking (suboptimal vs optimal)",
-    "Platinum (resitant vs senstive)"
+    "Debulking (suboptimal vs optimal)"
     )) %>% 
   dplyr::arrange(-hazard_ratio) %>% 
   dplyr::mutate(formalname = factor(formalname, levels = formalname)) ->
@@ -334,6 +327,10 @@ ggsave(
 
 # PFS ---------------------------------------------------------------------
 
+
+# PFS risk score distribution ---------------------------------------------
+
+
 pfs_risk_group %>% 
   dplyr::select(barcode, oc, stage, CA125, age, platelet_count, platinum, riskscore, riskscore_group = group, residual, event, duration) %>% 
   dplyr::mutate(platelet_count = as.numeric(platelet_count)) %>% 
@@ -354,6 +351,7 @@ ggsave(
   width = 5,
   height = 3.5
 )
+
 
 
 pfs_risk_group_s %>% 
@@ -397,19 +395,15 @@ ggsave(
 
 # Multicox ----------------------------------------------------------------
 
-
-
 coxph(formula = Surv(duration, event) ~ 
         riskscore_group + 
         ca125_group +
         age_group + 
         plc_group + 
         stage_group +
-        residual_group +
-        platinum_group, 
+        residual_group, 
       data = pfs_risk_group_s_s) ->
   pfs.coxph
-
 
 pfs.coxph %>% 
   broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>% 
@@ -426,8 +420,7 @@ pfs.coxph %>%
     "Age (>50 vs <=50)",
     "PLC (>350 vs <= 350)",
     "Stage (late vs early)",
-    "Debulking (suboptimal vs optimal)",
-    "Platinum (resitant vs senstive)"
+    "Debulking (suboptimal vs optimal)"
   )) %>% 
   dplyr::arrange(-hazard_ratio) %>% 
   dplyr::mutate(formalname = factor(formalname, levels = formalname))  ->
