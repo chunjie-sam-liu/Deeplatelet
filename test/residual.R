@@ -16,11 +16,11 @@ residual <- readxl::read_excel(path = "data/metadata/Residual.xlsx") %>%
   dplyr::select(barcode, residual)
 
 
-new_residual <- readxl::read_excel(path = "data/metadata/血小板-样本信息汇总0721V7.xlsx")
+new_residual <- readxl::read_excel(path = "data/metadata/血小板-样本信息汇总0728V3.xlsx")
 
 
 new_residual %>% 
-  dplyr::select(barcode, res = 32) %>% 
+  dplyr::select(barcode, res = 2) %>% 
   tidyr::drop_na() %>% 
   dplyr::mutate(residual = ifelse(res == "R0", "R0", "non-R0")) %>% 
   dplyr::select(-res) ->
