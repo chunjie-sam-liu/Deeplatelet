@@ -10,17 +10,14 @@
 library(magrittr)
 library(ggplot2)
 
-residual <- readxl::read_excel(path = "data/metadata/Residual.xlsx") %>% 
-  dplyr::filter(Residual != "NA") %>% 
-  dplyr::mutate(residual = ifelse(Residual %in% c("R0", "R1"), "R0", "non-R0")) %>% 
-  dplyr::select(barcode, residual)
 
-
-new_residual <- readxl::read_excel(path = "data/metadata/血小板-样本信息汇总0728V3.xlsx")
+new_residual <- readxl::read_excel(path = "data/metadata/血小板-样本信息汇总0729不含临床信息.xlsx")
 
 
 new_residual %>% 
-  dplyr::select(barcode, res = 2) %>% 
+  dplyr::select(barcode, res = 2, figo_stage, stage) %>% 
+  dplyr::mutate(figo_stage = ifelse(figo_stage == "NA", NA, figo_stage)) %>% 
+  dplyr::mutate(stage = ifelse(stage == "NA", NA, stage)) %>% 
   tidyr::drop_na() %>% 
   dplyr::mutate(residual = ifelse(res == "R0", "R0", "non-R0")) %>% 
   dplyr::select(-res) ->
