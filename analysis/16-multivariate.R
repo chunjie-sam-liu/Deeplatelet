@@ -16,10 +16,12 @@ platinum.se@colData %>%
   dplyr::select(barcode, platinum) ->
   platinum
 
-os_risk_group <- readxl::read_excel(path = "data/newoutput/Riskgroup-os.xlsx") %>% 
+os_risk_group <- readxl::read_excel(path = "data/newoutput/Riskgroup-os.xlsx") %>%
+  dplyr::select(-c(figo_stage, stage)) %>% 
   dplyr::left_join(residual, by = "barcode") %>% 
   dplyr::left_join(platinum, by = "barcode")
 pfs_risk_group <- readxl::read_excel(path = "data/newoutput/Riskgroup-pfs.xlsx") %>%
+  dplyr::select(-c(figo_stage, stage)) %>% 
   dplyr::left_join(residual, by = "barcode") %>% 
   dplyr::left_join(platinum, by = "barcode")
 
@@ -242,7 +244,7 @@ unicox_df <-
     "residual_group"
   ), formalname = c(
     "Risk score (high vs low)",
-    # "CA125 (>35 vs <=35)",
+    "CA125 (>35 vs <=35)",
     "Age (>50 vs <=50)",
     "PLC (>350 vs <= 350)",
     "Stage (late vs early)",
