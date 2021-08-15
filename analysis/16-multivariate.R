@@ -230,6 +230,8 @@ os_risk_group_s %>%
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   os_risk_group_s_s
 
+readr::write_rds(os_risk_group_s_s, file = "data/rda/os_risk_group_s_s.rds.gz")
+
 fn_test_age(os_risk_group_s_s)
 fn_test_plc(os_risk_group_s_s)
 
@@ -365,7 +367,7 @@ pfs_risk_group_s %>%
   dplyr::mutate(residual_group = factor(residual, levels = c("R0", "non-R0"))) %>% 
   dplyr::mutate(riskscore_group = factor(riskscore_group, levels = c("Low", "High")))->
   pfs_risk_group_s_s
-
+readr::write_rds(x = pfs_risk_group_s_s, file = "data/rda/pfs_risk_group_s_s.rds.gz")
 
 
 # Unicox ------------------------------------------------------------------
