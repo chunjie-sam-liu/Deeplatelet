@@ -125,3 +125,7 @@ pdf(file = "data/newoutput/PFS-nomogram.pdf", width = 12, height = 6)
 plot(nom.cox, xfrac = 0.3, total.points.label = "Sum of all points", cex.axis = 1.1, force.label = FALSE, tcl = 0.3, lmgp = 0.1, vnames = "labels")
 dev.off()
 
+
+# Save image --------------------------------------------------------------
+
+save.image(file = "data/rda/17-nomogram.rda")
