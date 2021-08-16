@@ -133,7 +133,6 @@ fn_save_survival_plot <- function(.obj, .cohort, .type) {
   )
 }
 
-
 fn_auc <- function(.d, .type) {
   .time <- ifelse(.type == 'os', 5 * 12, 3 * 12)
   survivalROC(
@@ -271,6 +270,8 @@ fn_surival_plot(.d = pfs.test2, 'EV2', .xlab = "PFS (months)", .ylab = "Survival
   fn_save_survival_plot(.cohort = 'EV2', .type = 'PFS')
 
 # AUC ---------------------------------------------------------------------
+
+fn_parallel_start(n_cores = 50)
 os.merge.auc <- fn_auc(os.merge, .type = 'os')
 os.merge.auc$ci <- fn_auc_ci(.d = os.merge, .type = 'os')
 os.merge.auc$tb <- os.merge.auc[c('TP', 'FP')] %>% 
