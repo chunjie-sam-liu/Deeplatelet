@@ -97,8 +97,8 @@ fn_plot_hr <- function(.d) {
   .d %>% 
     ggplot(aes(x = hazard_ratio, y = formalname)) +
     geom_point(size = 3, color = "red", fill = "red", shape = 23) +
-    geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.5) +
-    geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 1) +
+    geom_vline(xintercept = 1, linetype = 5, color = "black", size = 0.3) +
+    geom_errorbarh(aes(xmax = ci.high, xmin = ci.low, height = 0.2), size = 0.3) +
     geom_text(aes(x = -4, y = formalname, label = hr_label), size = 6, hjust = 0.5) +
     geom_text(aes(x = max(ci.high) + 5, y = formalname, label = pval_label), size = 6, hjust = 1) +
     scale_y_discrete(expand = c(0.1, 0)) +
@@ -106,7 +106,7 @@ fn_plot_hr <- function(.d) {
     theme(
       panel.grid = element_blank(),
       panel.background = element_blank(),
-      axis.line.x = element_line(colour = "black"),
+      axis.line.x = element_line(colour = "black", size = 0.3),
       axis.ticks.y = element_blank(),
       axis.title.y = element_blank(),
       axis.text = element_text(size = 14, colour = "black"),
@@ -232,8 +232,8 @@ os_risk_group_s %>%
 
 readr::write_rds(os_risk_group_s_s, file = "data/rda/os_risk_group_s_s.rds.gz")
 
-fn_test_age(os_risk_group_s_s)
-fn_test_plc(os_risk_group_s_s)
+# fn_test_age(os_risk_group_s_s)
+# fn_test_plc(os_risk_group_s_s)
 
 # Unicox ------------------------------------------------------------------
 unicox_df <- 
