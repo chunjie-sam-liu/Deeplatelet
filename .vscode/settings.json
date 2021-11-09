@@ -33,8 +33,6 @@
     "**/.Rproj.user": true,
     "**/*rds.gz": true
   },
-  "terminal.integrated.shellArgs.linux": ["-i", "-l"],
-  "terminal.integrated.shell.linux": "bash",
   "gitlens.mode.active": "zen",
   "editor.wordWrap": "on",
   "editor.minimap.enabled": false,
