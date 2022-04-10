@@ -125,7 +125,8 @@ fn_save_survival_plot <- function(.obj, .cohort, .type) {
   .filename <- glue::glue("final-{.type}-{.cohort}.pdf")
   ggsave(
     filename = .filename,
-    plot = print(.obj, newpage = FALSE),
+    # plot = print(.obj, newpage = FALSE),
+    plot = survminer:::.build_ggsurvplot(.obj),
     device = 'pdf',
     path = "data/newoutput",
     width = 6,
