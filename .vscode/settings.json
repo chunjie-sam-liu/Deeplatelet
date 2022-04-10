@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "venv/bin/python3.9",
+  "python.defaultInterpreterPath": "venv/bin/python",
   "python.analysis.disabled": ["unresolved-import"],
   "python.analysis.completeFunctionParens": true,
   "python.languageServer": "Pylance",
