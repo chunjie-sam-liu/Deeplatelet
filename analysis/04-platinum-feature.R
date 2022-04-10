@@ -65,7 +65,8 @@ fn_select_features <- function(.se) {
     as.matrix() %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = 'ensid') %>%
-    dplyr::filter(`1` != 0) %>%
+    # dplyr::filter(`1` != 0) %>%
+    dplyr::filter(s1 != 0) %>% 
     dplyr::filter(grepl(pattern = "ENSG", x = ensid)) %>%
     dplyr::pull(ensid)
   
