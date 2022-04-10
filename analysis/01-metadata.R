@@ -10,21 +10,21 @@
 library(magrittr)
 library(ggplot2)
 library(rlang)
-# Library -----------------------------------------------------------------
-
-library(magrittr)
-library(ggplot2)
 
 # Path --------------------------------------------------------------------
 
 
 filepath <- 'data/metadata/血小板预后2020年11月V1chijh.xlsx'
-
+filepath_updated <- "data/metadata/updated-os-data-20220407.xlsx"
 
 # Load data ---------------------------------------------------------------
 
 metadata <- readxl::read_excel(path = filepath, sheet = 6, skip = 1, col_types = c('text', 'text', 'text', 'date', 'text', 'text', 'text', 'text', 'date', 'date', 'numeric', 'text', 'text', 'date', 'date', 'text', 'date', 'text', 'date', 'numeric'))
-
+metadata_updated_part <- readxl::read_excel(path = filepath_updated, col_types = c("text", "text", "text", "numeric", "text", "text", "numeric", "text", "text")) %>% 
+  dplyr::select(patient_ID = `patient ID`, pfs = PFS, os = OS, platinum_sensitivity = `铂敏感性(1敏感 2耐药)`, alive_type = `是否死亡`, palindromia = `是否复发`) %>% 
+  dplyr::distinct() %>% 
+  dplyr::mutate(palindromia = ifelse(palindromia %in% c("YES", "yes"), "1", "2")) %>% 
+  dplyr::filter(!(patient_ID == "2001231661" & alive_type == "alive"))
 
 
 # Filter samples ----------------------------------------------------------
@@ -35,6 +35,26 @@ metadata %>%
   dplyr::select(barcode, patient_ID, oc, time_on_diagnosis, platinum_sensitivity, palindromia = palindromia2, pfs, alive_type, os) %>% 
   dplyr::filter(!is.na(time_on_diagnosis)) ->
   metadata
+
+
+for (i in 1:nrow(metadata)) {
+  pid <- metadata[i, "patient_ID", drop = TRUE]
+  # d1 <- metadata[i,]
+  d2 <- metadata_updated_part %>% 
+    dplyr::filter(patient_ID == pid)
+  
+  if (nrow(d2) != 1) {
+    next
+  }
+  
+  metadata[i,]$os <- d2$os
+  metadata[i,]$pfs <- d2$pfs
+  metadata[i,]$alive_type <- d2$alive_type
+  metadata[i,]$palindromia <- d2$palindromia
+  metadata[i,]$platinum_sensitivity <- d2$platinum_sensitivity
+  return(d1)
+}
+
 
 # save metadata
 readr::write_rds(metadata, file = 'data/metadata/metadata.rds.gz', compress = 'gz')
