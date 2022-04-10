@@ -109,13 +109,13 @@ fn_roc_95ci <- function(.p) {
   .rocm_epi <- epiR::epi.tests(dat = t(.rocm$confusion.matrix))
   tibble::tibble(
     auc = list(unlist(c(.auc$auc[2], .auc$auc[1], .auc$auc[3]))),
-    acc = list(unlist(.rocm_epi$rval$diag.acc)),
-    tpr = list(unlist(.rocm_epi$rval$se)),
-    tnr = list(unlist(.rocm_epi$rval$sp)),
-    ppv = list(unlist(.rocm_epi$rval$ppv)),
-    npv = list(unlist(.rocm_epi$rval$npv)),
-    kappa = .kappa_f1['kappa'],
-    f1 = .kappa_f1['f1']
+    acc = list(unlist(.rocm_epi$detail$diag.ac)),
+    tpr = list(unlist(.rocm_epi$detail$se)),
+    tnr = list(unlist(.rocm_epi$detail$sp)),
+    ppv = list(unlist(.rocm_epi$detail$pv.pos)),
+    npv = list(unlist(.rocm_epi$detail$pv.neg)),
+    kappa = .kappa_f1["kappa"],
+    f1 = .kappa_f1["f1"]
   )
 
 }
