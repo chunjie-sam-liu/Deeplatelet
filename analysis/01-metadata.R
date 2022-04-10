@@ -1,4 +1,15 @@
+# Metainfo ----------------------------------------------------------------
 
+# @AUTHOR: Chun-Jie Liu
+# @CONTACT: chunjie.sam.liu.at.gmail.com
+# @DATE: Sun Apr 10 19:52:48 2022
+# @DESCRIPTION: metadata.R
+
+# Library -----------------------------------------------------------------
+
+library(magrittr)
+library(ggplot2)
+library(rlang)
 # Library -----------------------------------------------------------------
 
 library(magrittr)
