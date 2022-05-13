@@ -7,6 +7,7 @@
 
 # Library -----------------------------------------------------------------
 
+
 library(magrittr)
 library(ggplot2)
 library(rlang)
@@ -27,14 +28,6 @@ metadata_updated_part <- readxl::read_excel(path = filepath_updated, col_types =
   dplyr::distinct() %>% 
   dplyr::mutate(palindromia = ifelse(palindromia %in% c("YES", "yes"), "1", "2")) %>% 
   dplyr::filter(!(patient_ID == "2001231661" & alive_type == "alive"))
-
-metadata_upodated_0510_os <- readxl::read_excel(
-  path = filepath_updated_0510_os
-)
-metadata_upodated_0510_pfs <- readxl::read_excel(
-  path = filepath_updated_0510_pfs
-)
-
 
 
 # Filter samples ----------------------------------------------------------
@@ -62,9 +55,11 @@ for (i in 1:nrow(metadata)) {
   metadata[i,]$alive_type <- d2$alive_type
   metadata[i,]$palindromia <- d2$palindromia
   metadata[i,]$platinum_sensitivity <- d2$platinum_sensitivity
-  return(d1)
+  # return(d1)
 }
 
+
+metadata
 
 # save metadata
 readr::write_rds(metadata, file = 'data/metadata/metadata.rds.gz', compress = 'gz')
