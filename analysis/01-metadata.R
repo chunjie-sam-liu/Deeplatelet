@@ -16,6 +16,8 @@ library(rlang)
 
 filepath <- 'data/metadata/血小板预后2020年11月V1chijh.xlsx'
 filepath_updated <- "data/metadata/updated-os-data-20220407.xlsx"
+filepath_updated_0510_os <- "data/metadata/Riskgroup-os-5-10(1).xlsx"
+filepath_updated_0510_pfs <- "data/metadata/Riskgroup-pfs-5-10(1).xlsx"
 
 # Load data ---------------------------------------------------------------
 
@@ -25,6 +27,14 @@ metadata_updated_part <- readxl::read_excel(path = filepath_updated, col_types =
   dplyr::distinct() %>% 
   dplyr::mutate(palindromia = ifelse(palindromia %in% c("YES", "yes"), "1", "2")) %>% 
   dplyr::filter(!(patient_ID == "2001231661" & alive_type == "alive"))
+
+metadata_upodated_0510_os <- readxl::read_excel(
+  path = filepath_updated_0510_os
+)
+metadata_upodated_0510_pfs <- readxl::read_excel(
+  path = filepath_updated_0510_pfs
+)
+
 
 
 # Filter samples ----------------------------------------------------------
