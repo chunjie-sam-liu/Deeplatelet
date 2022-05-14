@@ -44,7 +44,18 @@ fn_cindex_ci <- function(.d) {
   glue::glue("{signif(.lower, 3)}-{signif(.upper, 3)}")
 }
 
-fn_surival_plot <- function(.d, .cohort = 'TC', .xlab = 'OS (months)', .ylab = 'Survival probability (OS)') {
+fn_surival_plot <- function(.d, .cohort = 'TC', .type = "OS", .xlab = 'OS (months)', .ylab = 'Survival probability (OS)') {
+  
+  .max <- if(.type == "OS") {
+    60
+  } else {
+    36
+  }
+  
+  .d %>% 
+    dplyr::mutate(event = ifelse(durations > .max, 0, event)) %>% 
+    dplyr::mutate(durations = ifelse(durations > .max, .max, durations)) ->
+    .d
   
   .cohort.label <- if (.cohort == "EV1") {
     "VC1"
@@ -71,8 +82,8 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .xlab = 'OS (months)', .ylab = '
   ggsurvplot(
     fit = survfit(formula = Surv(durations, event) ~ group, data = .d),
     data = .d,
-    xlim = c(0, max(.d$durations)),
-    break.x.by = 10,
+    xlim = c(0, .max),
+    break.x.by = 6,
     pval = FALSE,
     pval.method = TRUE,
     pval.size = 7,
@@ -217,11 +228,11 @@ dplyr::bind_rows(
 
 
 # OS survival plot --------------------------------------------------------
-fn_surival_plot(.d = os.merge, 'TC') %>% 
+fn_surival_plot(.d = os.merge, .cohort = 'TC', .type = "OS") %>% 
   fn_save_survival_plot(.cohort = 'TC', .type = 'OS')
-fn_surival_plot(.d = os.test1, 'EV1') %>%
+fn_surival_plot(.d = os.test1, .cohort = 'EV1', .type = 'OS') %>%
   fn_save_survival_plot(.cohort = 'EV1', .type = 'OS')
-fn_surival_plot(.d = os.test2, 'EV2') %>%
+fn_surival_plot(.d = os.test2, .cohort = 'EV2', .type = 'OS') %>%
   fn_save_survival_plot(.cohort = 'EV2', .type = 'OS')
 
 
@@ -265,11 +276,11 @@ dplyr::bind_rows(
 
 # pfs survival plot -------------------------------------------------------
 
-fn_surival_plot(.d = pfs.merge, 'TC', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>% 
+fn_surival_plot(.d = pfs.merge, 'TC',.type = 'PFS', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>% 
   fn_save_survival_plot(.cohort = 'TC', .type = 'PFS')
-fn_surival_plot(.d = pfs.test1, 'EV1', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
+fn_surival_plot(.d = pfs.test1, 'EV1', .type = 'PFS', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
   fn_save_survival_plot(.cohort = 'EV1', .type = 'PFS')
-fn_surival_plot(.d = pfs.test2, 'EV2', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
+fn_surival_plot(.d = pfs.test2, 'EV2', .type = 'PFS', .xlab = "PFS (months)", .ylab = "Survival probability (PFS)") %>%
   fn_save_survival_plot(.cohort = 'EV2', .type = 'PFS')
 
 # AUC ---------------------------------------------------------------------
