@@ -7,7 +7,6 @@
 
 # Library -----------------------------------------------------------------
 
-
 library(magrittr)
 library(ggplot2)
 library(rlang)
@@ -17,8 +16,6 @@ library(rlang)
 
 filepath <- 'data/metadata/血小板预后2020年11月V1chijh.xlsx'
 filepath_updated <- "data/metadata/updated-os-data-20220407.xlsx"
-filepath_updated_0510_os <- "data/metadata/Riskgroup-os-5-10(1).xlsx"
-filepath_updated_0510_pfs <- "data/metadata/Riskgroup-pfs-5-10(1).xlsx"
 
 # Load data ---------------------------------------------------------------
 
@@ -55,11 +52,9 @@ for (i in 1:nrow(metadata)) {
   metadata[i,]$alive_type <- d2$alive_type
   metadata[i,]$palindromia <- d2$palindromia
   metadata[i,]$platinum_sensitivity <- d2$platinum_sensitivity
-  # return(d1)
+  return(d1)
 }
 
-
-metadata
 
 # save metadata
 readr::write_rds(metadata, file = 'data/metadata/metadata.rds.gz', compress = 'gz')
