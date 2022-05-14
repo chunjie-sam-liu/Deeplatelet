@@ -71,6 +71,8 @@ fn_surival_plot <- function(.d, .cohort = 'TC', .xlab = 'OS (months)', .ylab = '
   ggsurvplot(
     fit = survfit(formula = Surv(durations, event) ~ group, data = .d),
     data = .d,
+    xlim = c(0, max(.d$durations)),
+    break.x.by = 10,
     pval = FALSE,
     pval.method = TRUE,
     pval.size = 7,
