@@ -176,6 +176,28 @@ total434.pfs.expr.coxph.hazard_ratio %>%
   dplyr::filter(ensid %in% total434.se.multicox$ensid) %>%
   readr::write_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
 
+
+# Intersection ------------------------------------------------------------
+
+ensid_inter <- intersect(total416.os.expr.coxph.hazard_ratio$ensid, total434.pfs.expr.coxph.hazard_ratio$ensid)
+
+total416.se.multicox_inter <- fn_lasso(
+  .se = total416.os.se, 
+  .hr = total416.os.expr.coxph.hazard_ratio %>% 
+    dplyr::filter(ensid %in% ensid_inter), 
+  .type = 'OS'
+)
+
+
+
+total434.se.multicox_inter <- fn_lasso(
+  .se = total434.pfs.se, 
+  .hr = total434.pfs.expr.coxph.hazard_ratio %>% 
+    dplyr::filter(ensid %in% ensid_inter), 
+  .type = 'pfs'
+)
+
+
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/09-os-pfs-univariate-cox-regression.rda')
