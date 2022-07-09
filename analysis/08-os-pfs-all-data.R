@@ -99,3 +99,4 @@ ggsave(
 # Save --------------------------------------------------------------------
 
 save.image(file = 'data/rda/08-os-pfs-all-data.rda')
+load(file = 'data/rda/08-os-pfs-all-data.rda')
