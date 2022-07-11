@@ -181,22 +181,33 @@ total434.pfs.expr.coxph.hazard_ratio %>%
 
 ensid_inter <- intersect(total416.os.expr.coxph.hazard_ratio$ensid, total434.pfs.expr.coxph.hazard_ratio$ensid)
 
+total416.os.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% ensid_inter) ->
+  total416.os.expr.coxph.hazard_ratio.inter
+
+
+
+total434.pfs.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% ensid_inter) ->
+  total434.pfs.expr.coxph.hazard_ratio.inter
+
 total416.se.multicox_inter <- fn_lasso(
   .se = total416.os.se, 
-  .hr = total416.os.expr.coxph.hazard_ratio %>% 
-    dplyr::filter(ensid %in% ensid_inter), 
+  .hr = total416.os.expr.coxph.hazard_ratio.inter, 
   .type = 'OS'
 )
 
 
-
 total434.se.multicox_inter <- fn_lasso(
   .se = total434.pfs.se, 
-  .hr = total434.pfs.expr.coxph.hazard_ratio %>% 
-    dplyr::filter(ensid %in% ensid_inter), 
+  .hr = total434.pfs.expr.coxph.hazard_ratio.inter, 
   .type = 'pfs'
 )
 
+intersect(total416.se.multicox_inter$ensid, total434.se.multicox_inter$ensid)
+
+
+intersect(a$ensid, total416.se.multicox_inter$ensid)
 
 # Save image --------------------------------------------------------------
 
