@@ -72,7 +72,8 @@ fn_lasso <- function(.se, .hr, .type = 'os') {
   as.data.frame(.se@colData) %>% 
     dplyr::filter(duration > 0) %>% 
     # dplyr::filter(oc == 'OC521') %>%
-    dplyr::pull(barcode) -> .samples
+    dplyr::pull(barcode) -> 
+    .samples
   
   .d <- .se[.hr$ensid, .samples]
   
@@ -88,23 +89,27 @@ fn_lasso <- function(.se, .hr, .type = 'os') {
     family = 'cox'
   )
   
-  pdf(file = glue::glue('data/output/{.type}-multicox-lasso.pdf'))
-  plot(.fit, main = glue::glue('{.type}-multicox-lasso'))
-  dev.off()
+  # pdf(file = glue::glue('data/output/{.type}-multicox-lasso.pdf'))
+  # plot(.fit, main = glue::glue('{.type}-multicox-lasso'))
+  # dev.off()
   
   .cvfit <- glmnet::cv.glmnet(x = .x, y = .y, family = 'cox')
   
-  pdf(file = glue::glue('data/output/{.type}-multicox-lasso-lambda.pdf'))
-  plot(.cvfit, main=glue::glue('{.type}-multicox-lasso-lambda'))
-  dev.off()
+  # pdf(file = glue::glue('data/output/{.type}-multicox-lasso-lambda.pdf'))
+  # plot(.cvfit, main=glue::glue('{.type}-multicox-lasso-lambda'))
+  # dev.off()
   
   .coef.min <- coef(.cvfit, s = 'lambda.min')
   
-  as.matrix(.coef.min) %>% 
-    as.data.frame() %>% 
-    tibble::rownames_to_column(var = 'ensid') %>% 
-    dplyr::rename(coef = `1`) %>% 
-    dplyr::filter(abs(coef) > 0)
+  # as.matrix(.coef.min) %>% 
+  #   as.data.frame() %>% 
+  #   tibble::rownames_to_column(var = 'ensid') %>% 
+  #   dplyr::rename(coef = `1`) %>% 
+  #   dplyr::filter(abs(coef) > 0)
+  as.matrix(.coef.min) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var = 'ensid') %>%
+    dplyr::rename(coef = `1`)
 }
 # Analysis ----------------------------------------------------------------
 
@@ -185,18 +190,18 @@ total416.os.expr.coxph.hazard_ratio %>%
   dplyr::filter(ensid %in% ensid_inter) ->
   total416.os.expr.coxph.hazard_ratio.inter
 
-
-
-total434.pfs.expr.coxph.hazard_ratio %>% 
-  dplyr::filter(ensid %in% ensid_inter) ->
-  total434.pfs.expr.coxph.hazard_ratio.inter
-
 total416.se.multicox_inter <- fn_lasso(
   .se = total416.os.se, 
   .hr = total416.os.expr.coxph.hazard_ratio.inter, 
   .type = 'OS'
 )
+total416.se.multicox_inter %>% 
+  dplyr::filter(abs(coef) > 0) -> a
 
+
+total434.pfs.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% ensid_inter) ->
+  total434.pfs.expr.coxph.hazard_ratio.inter
 
 total434.se.multicox_inter <- fn_lasso(
   .se = total434.pfs.se, 
@@ -204,10 +209,23 @@ total434.se.multicox_inter <- fn_lasso(
   .type = 'pfs'
 )
 
-intersect(total416.se.multicox_inter$ensid, total434.se.multicox_inter$ensid)
+total434.se.multicox_inter %>% 
+  dplyr::filter(abs(coef) > 0) -> b
+
+ggvenn::ggvenn(
+  data = list(
+    a = total416.se.multicox_inter$ensid,
+    b = total434.se.multicox_inter$ensid
+  )
+)
 
 
-intersect(a$ensid, total416.se.multicox_inter$ensid)
+ggvenn::ggvenn(
+  data = list(
+    a = a$ensid,
+    b = b$ensid
+  )
+)
 
 # Save image --------------------------------------------------------------
 
