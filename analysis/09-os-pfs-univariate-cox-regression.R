@@ -101,15 +101,15 @@ fn_lasso <- function(.se, .hr, .type = 'os') {
   
   .coef.min <- coef(.cvfit, s = 'lambda.min')
   
-  # as.matrix(.coef.min) %>% 
-  #   as.data.frame() %>% 
-  #   tibble::rownames_to_column(var = 'ensid') %>% 
-  #   dplyr::rename(coef = `1`) %>% 
-  #   dplyr::filter(abs(coef) > 0)
   as.matrix(.coef.min) %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = 'ensid') %>%
-    dplyr::rename(coef = `1`)
+    dplyr::rename(coef = `1`) %>%
+    dplyr::filter(abs(coef) > 0)
+  # as.matrix(.coef.min) %>%
+  #   as.data.frame() %>%
+  #   tibble::rownames_to_column(var = 'ensid') %>%
+  #   dplyr::rename(coef = `1`)
 }
 # Analysis ----------------------------------------------------------------
 
@@ -195,8 +195,6 @@ total416.se.multicox_inter <- fn_lasso(
   .hr = total416.os.expr.coxph.hazard_ratio.inter, 
   .type = 'OS'
 )
-total416.se.multicox_inter %>% 
-  dplyr::filter(abs(coef) > 0) -> a
 
 
 total434.pfs.expr.coxph.hazard_ratio %>% 
@@ -209,24 +207,39 @@ total434.se.multicox_inter <- fn_lasso(
   .type = 'pfs'
 )
 
-total434.se.multicox_inter %>% 
-  dplyr::filter(abs(coef) > 0) -> b
+
+union(total416.se.multicox_inter$ensid, total434.se.multicox_inter$ensid)
+
+
+#
 
 ggvenn::ggvenn(
   data = list(
     a = total416.se.multicox_inter$ensid,
     b = total434.se.multicox_inter$ensid
   )
-)
+) ->p1
 
 
 ggvenn::ggvenn(
   data = list(
-    a = a$ensid,
-    b = b$ensid
+    c = total416.se.multicox$ensid,
+    d = total434.se.multicox$ensid
   )
-)
+) ->p2
 
+ggvenn::ggvenn(
+  data = list(
+    a = total416.se.multicox_inter$ensid,
+    b = total434.se.multicox_inter$ensid,
+    c = total416.se.multicox$ensid,
+    d = total434.se.multicox$ensid
+  )
+) ->p3
+library(patchwork)
+
+p3 | p1/p2
+#
 # Save image --------------------------------------------------------------
 
 save.image(file = 'data/rda/09-os-pfs-univariate-cox-regression.rda')
