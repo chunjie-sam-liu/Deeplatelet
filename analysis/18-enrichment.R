@@ -28,16 +28,23 @@ platinum.panel <- readr::read_rds(file = 'data/rda/panel.rds.gz')
 
 os.panel.df <- fn_convertId(ids = os.panel)
 pfs.panel.df <- fn_convertId(ids = pfs.panel) %>% 
-  dplyr::filter(entrezgene_id != 107080638)
+  dplyr::filter(entrezgene_id != 100874074 )
 platinum.panel.df <- fn_convertId(ids = platinum.panel)
 platinum.panel.df %>% 
   dplyr::group_by(ensembl_gene_id) %>% 
   dplyr::filter(dplyr::n() > 1)
 
+total416.os.expr.coxph.hazard_ratio <- readr::read_rds(file='data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz') %>% 
+  dplyr::rename(ensembl_gene_id = ensid)
+total434.pfs.expr.coxph.hazard_ratio <- readr::read_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz') %>% 
+  dplyr::rename(ensembl_gene_id = ensid)
+
 
 os.pfs.platinum.panel.df <- list(
-  "OS gene panel" = os.panel.df,
-  "PFS gene panel" = pfs.panel.df,
+  "OS gene panel" = os.panel.df %>% 
+    dplyr::inner_join(total416.os.expr.coxph.hazard_ratio, by = "ensembl_gene_id"),
+  "PFS gene panel" = pfs.panel.df %>% 
+    dplyr::inner_join(total434.pfs.expr.coxph.hazard_ratio, by = "ensembl_gene_id"),
   "Platinum gene panel" = platinum.panel.df
 )
 
@@ -63,6 +70,7 @@ os.panel.msig <- enricher(
     dplyr::mutate(gs_name = glue::glue("{gs_cat}#{gs_name}")) %>%
     dplyr::select(gs_name, ensembl_gene)
 )
+
 os.panel.msig %>%
   tibble::as_tibble() %>%
   tidyr::separate(col = Description, into = c("gs_cat", "Description"), sep="#") ->

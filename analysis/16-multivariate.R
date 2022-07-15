@@ -11,6 +11,7 @@ library(survival)
 residual <- readxl::read_excel(path = "data/metadata/residual.xlsx") 
 
 platinum.se <- readr::read_rds(file = "data/rda/total351.platinum.se.rds.gz")
+
 platinum.se@colData %>% 
   as.data.frame() %>% 
   dplyr::select(barcode, platinum) ->
@@ -20,6 +21,7 @@ os_risk_group <- readxl::read_excel(path = "data/newoutput/Riskgroup-os.xlsx") %
   dplyr::select(-c(figo_stage, stage)) %>% 
   dplyr::left_join(residual, by = "barcode") %>% 
   dplyr::left_join(platinum, by = "barcode")
+
 pfs_risk_group <- readxl::read_excel(path = "data/newoutput/Riskgroup-pfs.xlsx") %>%
   dplyr::select(-c(figo_stage, stage)) %>% 
   dplyr::left_join(residual, by = "barcode") %>% 
