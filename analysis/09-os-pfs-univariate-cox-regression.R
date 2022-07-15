@@ -208,10 +208,18 @@ total434.se.multicox_inter <- fn_lasso(
 )
 
 
-union(total416.se.multicox_inter$ensid, total434.se.multicox_inter$ensid)
+union(total416.se.multicox_inter$ensid, total434.se.multicox_inter$ensid) -> final_gene_set
+# new write
+total416.os.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% final_gene_set) %>%
+  readr::write_rds(file = 'data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
+total434.pfs.expr.coxph.hazard_ratio %>% 
+  dplyr::filter(ensid %in% final_gene_set) %>%
+  readr::write_rds(file = 'data/rda/total434.pfs.expr.coxph.hazard_ratio.rds.gz', compress = 'gz')
+
+# a -----------------------------------------------------------------------
 
 
-#
 
 ggvenn::ggvenn(
   data = list(
