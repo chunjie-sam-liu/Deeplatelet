@@ -48,9 +48,17 @@ os.pfs.platinum.panel.df <- list(
   "Platinum gene panel" = platinum.panel.df
 )
 
+os.pfs.platinum.panel.df <- list(
+  "OS gene panel" = total416.os.expr.coxph.hazard_ratio %>% 
+    dplyr::select(-name) %>% 
+    dplyr::left_join(os.panel.df, by = "ensembl_gene_id") %>% 
+    dplyr::filter(ensembl_gene_id  != "ENSG00000259174") %>% 
+    dplyr::filter(entrezgene_id != 107080638 |is.na(entrezgene_id) )
+)
+
 writexl::write_xlsx(
   x = os.pfs.platinum.panel.df, 
-  path = "data/newoutput/OS-PFS-Platinum-Panel-Description.xlsx"
+  path = "data/newoutput/Panel-Description.xlsx"
   )
 
 
