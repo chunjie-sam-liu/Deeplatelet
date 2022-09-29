@@ -18,6 +18,9 @@ source(file = "src/doparallel.R", local = TRUE)
 total351.platinum.se <- readr::read_rds(file = "data/rda/total351.platinum.se.rds.gz")
 
 
+
+
+
 # Function ----------------------------------------------------------------
 
 fn_filter_samples <- function(.se) {
@@ -159,3 +162,131 @@ readr::write_rds(x = total351.platinum.se.norm.filter_sample.rbe, file = "data/r
 # Save image --------------------------------------------------------------
 
 save.image(file = "data/rda/03-platinum-normalize.rda")
+load(file = "data/rda/03-platinum-normalize.rda")
+
+
+total351.platinum.se.fs$group = factor(total351.platinum.se.fs$platinum, levels = c("resistant", "sensitive" ), ordered = FALSE)
+
+total351.platinum.se.fs_res <- results(DESeq(DESeqDataSet(total351.platinum.se.fs[rowMeans(assay(total351.platinum.se.fs)) >= 5, ], design = ~ group)))
+
+
+total351.platinum.se.fs_res %>% 
+  as.data.frame() %>% 
+  tibble::rownames_to_column(var = "ensg") %>% 
+  dplyr::filter(!is.na(padj)) %>% 
+  dplyr::filter(baseMean > 5) %>% 
+  dplyr::mutate(log2FC = ifelse(log2FoldChange > 4, 4, log2FoldChange)) %>%
+  dplyr::mutate(log2FC = ifelse(log2FC < -4, -4, log2FC)) %>%
+  # dplyr::mutate(log2FC = log2FoldChange) %>% 
+  dplyr::mutate(FDR = -log10(padj)) %>% 
+  dplyr::mutate(FDR = ifelse(FDR > 8, 8, FDR)) %>% 
+  dplyr::mutate(
+    color = dplyr::case_when(
+      log2FC > log2(1.3) & padj < 0.05 ~ "red",
+      log2FC < log2(1/1.3) & padj < 0.05 ~ "green",
+      TRUE ~ "grey"
+    )
+  ) ->
+  de
+
+de %>% 
+  dplyr::filter(color != "grey") %>% 
+  dplyr::group_by(color) %>% 
+  dplyr::count() %>% 
+  dplyr::ungroup() %>% 
+  tibble::deframe() ->
+  de_x
+
+# de %>% dplyr::group_by(color) %>% dplyr::count()
+de_x
+
+de %>% 
+  ggplot(aes(x = log2FC, y = FDR, color = color)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values =  c("#6BAB62", "grey", "#9A84B2")) +
+  geom_segment(
+    aes(x = x1, y = y1, xend = x2, yend = y2),
+    color = "black",
+    linetype = 88,
+    data = tibble::tibble(
+      x1 = c(-Inf, log2(1.3), log2(1/1.3), log2(1.3)),
+      y1 = -log10(0.05),
+      x2 = c(log2(1/1.3), Inf, log2(1/1.3), log2(1.3) ),
+      y2 = c(-log10(0.05), -log10(0.05), Inf, Inf))
+  ) +
+  # ggrepel::geom_text_repel(
+  #   aes(label = GeneName),
+  #   data = subset(.xd, color == "red") %>% 
+  #     dplyr::arrange(-FDR, -abs(log2FC)) %>% 
+  #     dplyr::slice(1:10),
+  #   box.padding = 0.5,
+  #   max.overlaps = Inf,
+  #   # size = 6
+  # ) +
+  # ggrepel::geom_text_repel(
+  #   aes(label = GeneName),
+  #   data = subset(.xd, color == "green") %>% 
+  #     dplyr::arrange(-FDR, -abs(log2FC)) %>% 
+  #     dplyr::slice(1:10),
+  #   box.padding = 0.5,
+  #   max.overlaps = Inf,
+  #   # size = 6
+  # ) +
+  scale_x_continuous(
+    # limits = c(-4, 4),
+    expand = c(0.02, 0)
+  ) +
+  scale_y_continuous(
+    expand = c(0.01, 0),
+    limits = c(
+      0,
+      ceiling(
+        max(
+          de %>% 
+            dplyr::filter(!is.infinite(FDR)) %>% 
+            dplyr::pull(FDR)
+        ) / 10
+      ) * 10
+    )
+  ) +
+  theme(
+    panel.background = element_rect(fill = NA, color = NA),
+    axis.line.x.bottom = element_line(color = "black"),
+    axis.line.y.left = element_line(color = "black"),
+    axis.text = element_text(color = "black", size = 16),
+    axis.title = element_text(color = "black", size = 18),
+    
+    legend.position = "none",
+    
+  ) +
+  labs(
+    x = "log2FC",
+    y = "-log10(FDR)",
+    title = glue::glue("Up (n={de_x[2]}), Down (n={de_x[1]}); |log2FC| > 1.3, FDR < 0.05; Pt response")
+  )  ->
+  p
+
+de %>% 
+  dplyr::filter(color != "grey") %>% 
+  writexl::write_xlsx("data/review/deg.xlsx")
+
+
+ggsave(
+  filename = "de.pdf",
+  plot = p,
+  device = "pdf",
+  path = "data/review",
+  width = 6,
+  height = 5
+)
+
+
+os.panel <- readr::read_rds(file='data/rda/total416.os.expr.coxph.hazard_ratio.rds.gz') %>% 
+  dplyr::pull(ensid)
+
+
+intersect(os.panel, de %>% dplyr::filter(color != "grey") %>% dplyr::pull(ensg))
+
+de %>% 
+  dplyr::filter(color != "grey") %>% 
+  dplyr::filter(ensg %in% os.panel) 
